@@ -76,7 +76,7 @@
         }
 
         .simple-button {
-            background: #4f46e5; /* 靛藍色 */
+            background: #4f46e5;
             color: #ffffff;
             transition: all 0.2s ease;
             font-weight: 500;
@@ -119,7 +119,7 @@
                 </span>
                 <span>連線中...</span>
             </div>
-            <!-- PWA 安裝按鈕 (預設隱藏，由 JS 控制顯示) -->
+            <!-- PWA 安裝按鈕 -->
             <button id="install-pwa-btn" class="hidden simple-button bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 <span class="hidden sm:inline">安裝 App</span>
@@ -165,11 +165,11 @@
 
     </main>
 
-    <!-- 新增書籤 Modal 彈出視窗 -->
+    <!-- 新增/編輯書籤 Modal 彈出視窗 -->
     <div id="add-modal" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div id="modal-content" class="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-300 mx-4">
             <div class="flex justify-between items-center mb-5">
-                <h2 class="text-lg font-bold text-gray-900">新增書籤</h2>
+                <h2 id="modal-title" class="text-lg font-bold text-gray-900">新增書籤</h2>
                 <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -209,17 +209,17 @@
     </div>
 
     <script type="module">
-        // 匯入 Firebase SDK (使用 v11 版本)
+        // 匯入 Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // 加入 updateDoc 支援編輯功能
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // 1. 初始化 Firebase 設定
         let firebaseConfig;
         if (typeof __firebase_config !== 'undefined') {
             firebaseConfig = JSON.parse(__firebase_config);
         } else {
-            // 使用你提供的設定
             firebaseConfig = {
                 apiKey: "AIzaSyDOgR3gRavnvf7l_87_Jn7Jp4sCrG3_eFs",
                 authDomain: "mixed-d827c.firebaseapp.com",
@@ -241,6 +241,9 @@
         let globalBookmarks = [];
         let activeCategoryFilter = '全部';
         let isAddingNewCategory = false;
+        
+        // 新增編輯狀態追蹤變數
+        let currentEditId = null;
 
         // DOM 元素
         const authStatus = document.getElementById('auth-status');
@@ -258,7 +261,15 @@
         const linkCount = document.getElementById('link-count');
         const errorMessage = document.getElementById('error-message');
 
-        // 用於為卡片圖示產生不同顏色的陣列 (馬卡龍色系)
+        // Modal 元素
+        const addModal = document.getElementById('add-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+
+        // 用於為卡片圖示產生不同顏色的陣列
         const iconColors = [
             'bg-red-100 text-red-600', 'bg-orange-100 text-orange-600', 
             'bg-amber-100 text-amber-600', 'bg-green-100 text-green-600', 
@@ -269,7 +280,6 @@
             'bg-pink-100 text-pink-600', 'bg-rose-100 text-rose-600'
         ];
 
-        // 根據標題計算並獲取固定的顏色
         function getIconColor(title) {
             let hash = 0;
             for (let i = 0; i < title.length; i++) {
@@ -278,17 +288,39 @@
             return iconColors[Math.abs(hash) % iconColors.length];
         }
 
-        // Modal 元素
-        const addModal = document.getElementById('add-modal');
-        const modalContent = document.getElementById('modal-content');
-        const openModalBtn = document.getElementById('open-modal-btn');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const cancelModalBtn = document.getElementById('cancel-modal-btn');
-
-        // Modal 控制邏輯
-        function openModal() {
+        // Modal 控制邏輯 (現在支援傳入 editData)
+        function openModal(editData = null) {
             addModal.classList.remove('hidden');
-            // 延遲一點點以觸發 CSS 動畫
+            
+            if (editData && editData.id) {
+                // 編輯模式
+                currentEditId = editData.id;
+                modalTitle.textContent = '編輯書籤';
+                submitBtn.textContent = '更新';
+                
+                linkTitleInput.value = editData.title;
+                linkUrlInput.value = editData.url;
+                
+                // 處理分類選單的預設值
+                const existingOptions = Array.from(categorySelect.options).map(opt => opt.value);
+                if (existingOptions.includes(editData.category)) {
+                    resetCategoryToggle(); // 使用選單模式
+                    categorySelect.value = editData.category;
+                } else {
+                    // 如果分類不存在於清單中（極少數情況），切換成手動輸入模式
+                    if(!isAddingNewCategory) toggleCategoryBtn.click();
+                    categoryNewInput.value = editData.category || '未分類';
+                }
+            } else {
+                // 新增模式
+                currentEditId = null;
+                modalTitle.textContent = '新增書籤';
+                submitBtn.textContent = '儲存';
+                addLinkForm.reset();
+                resetCategoryToggle();
+            }
+
+            // 觸發 CSS 動畫
             setTimeout(() => {
                 addModal.classList.remove('opacity-0');
                 modalContent.classList.remove('scale-95');
@@ -329,18 +361,17 @@
             modalContent.classList.add('scale-95');
             setTimeout(() => {
                 addModal.classList.add('hidden');
-                // 關閉時自動清空表單
                 addLinkForm.reset();
                 resetCategoryToggle();
+                currentEditId = null; // 關閉時清空編輯 ID
                 errorMessage.classList.add('hidden');
             }, 300);
         }
 
-        openModalBtn.addEventListener('click', openModal);
+        openModalBtn.addEventListener('click', () => openModal(null));
         closeModalBtn.addEventListener('click', closeModal);
         cancelModalBtn.addEventListener('click', closeModal);
         
-        // 點擊半透明背景也能關閉 Modal
         addModal.addEventListener('click', (e) => {
             if (e.target === addModal) closeModal();
         });
@@ -370,18 +401,14 @@
                     <span class="text-emerald-700 font-medium">已連線</span>
                 `;
                 
-                // 啟用按鈕
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('cursor-not-allowed');
-                
-                // 開始載入資料
                 loadData();
             } else {
                 currentUser = null;
             }
         });
 
-        // 啟動登入
         initAuth();
 
         // 3. 讀取並顯示資料
@@ -391,10 +418,8 @@
             loadingIndicator.classList.remove('hidden');
             emptyState.classList.add('hidden');
 
-            // 路徑規則：/artifacts/{appId}/users/{userId}/{collectionName}
             const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
 
-            // 實時監聽資料庫更新
             unsubscribeSnapshot = onSnapshot(collectionRef, (snapshot) => {
                 loadingIndicator.classList.add('hidden');
                 
@@ -417,7 +442,6 @@
             categoriesContainer.innerHTML = '';
             categoryFilters.innerHTML = '';
             
-            // 更新數量標籤
             if (globalBookmarks.length > 0) {
                 linkCount.textContent = globalBookmarks.length;
                 linkCount.classList.remove('hidden');
@@ -430,7 +454,6 @@
             
             emptyState.classList.add('hidden');
 
-            // 分組資料與提取所有不重複的分類
             const groupedBookmarks = {};
             const categoriesSet = new Set();
 
@@ -444,14 +467,13 @@
                 groupedBookmarks[category].push(bookmark);
             });
 
-            // 排序分類 (將 '未分類' 放到最後，其他按字母排)
             const sortedCategories = Array.from(categoriesSet).sort((a, b) => {
                 if (a === '未分類') return 1;
                 if (b === '未分類') return -1;
                 return a.localeCompare(b);
             });
 
-            // --- 渲染分類過濾器 (Pills) ---
+            // 渲染分類過濾器
             const allBtn = document.createElement('button');
             allBtn.textContent = '全部';
             allBtn.className = `px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${activeCategoryFilter === '全部' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`;
@@ -466,7 +488,7 @@
                 categoryFilters.appendChild(btn);
             });
 
-            // --- 更新新增表單的下拉選單 ---
+            // 更新新增表單的下拉選單
             const currentSelectValue = categorySelect.value;
             categorySelect.innerHTML = '';
             sortedCategories.forEach(cat => {
@@ -475,33 +497,30 @@
                 option.textContent = cat;
                 categorySelect.appendChild(option);
             });
-            // 嘗試保留使用者原本的選擇或預設選中當前過濾的分類
+            
             if (sortedCategories.includes(currentSelectValue)) {
                 categorySelect.value = currentSelectValue;
             } else if (activeCategoryFilter !== '全部' && sortedCategories.includes(activeCategoryFilter)) {
                 categorySelect.value = activeCategoryFilter;
             }
 
-            // --- 渲染書籤卡片 ---
+            // 渲染書籤卡片
             const categoriesToRender = activeCategoryFilter === '全部' ? sortedCategories : [activeCategoryFilter];
 
             categoriesToRender.forEach(category => {
-                if (!groupedBookmarks[category]) return; // 防呆
+                if (!groupedBookmarks[category]) return;
                 
                 const bookmarks = groupedBookmarks[category];
                 
-                // 卡片按時間排序 (新的在前面)
                 bookmarks.sort((a, b) => {
                     const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
                     const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
                     return timeB - timeA;
                 });
 
-                // 創建分類標題與容器
                 const categorySection = document.createElement('div');
                 categorySection.className = "flex flex-col gap-3";
                 
-                // 只有選擇「全部」時才顯示每個區塊的分類小標題
                 if (activeCategoryFilter === '全部') {
                     const categoryHeader = document.createElement('h3');
                     categoryHeader.className = "text-sm font-bold text-gray-500 tracking-wide mb-1 mt-2 flex items-center gap-2";
@@ -509,7 +528,6 @@
                     categorySection.appendChild(categoryHeader);
                 }
 
-                // 渲染該分類下的卡片
                 bookmarks.forEach(bookmark => {
                     const card = document.createElement('a');
                     card.href = bookmark.url;
@@ -538,13 +556,26 @@
                             </div>
                         </div>
                         
-                        <div class="flex-shrink-0 ml-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                            <button class="delete-btn text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-colors" data-id="${bookmark.id}" title="刪除">
+                        <!-- 加入編輯與刪除按鈕 -->
+                        <div class="flex-shrink-0 ml-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                            <button class="edit-btn text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 p-2 rounded transition-colors" title="編輯">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button class="delete-btn text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="刪除">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
                     `;
                     
+                    // 綁定編輯事件
+                    const editBtn = card.querySelector('.edit-btn');
+                    editBtn.addEventListener('click', (e) => {
+                        e.preventDefault(); // 阻止 a 標籤跳轉
+                        e.stopPropagation();
+                        openModal(bookmark); // 將這筆資料傳入開啓編輯
+                    });
+
+                    // 綁定刪除事件
                     const deleteBtn = card.querySelector('.delete-btn');
                     deleteBtn.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -561,14 +592,13 @@
             });
         }
 
-        // 4. 新增資料
+        // 4. 新增/更新資料
         addLinkForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
 
             errorMessage.classList.add('hidden');
             
-            // 判斷當下要抓取選單還是新輸入的值
             const category = isAddingNewCategory 
                 ? (categoryNewInput.value.trim() || '未分類') 
                 : categorySelect.value;
@@ -576,7 +606,6 @@
             const title = linkTitleInput.value.trim();
             let url = linkUrlInput.value.trim();
 
-            // 確保網址格式
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 url = 'https://' + url;
             }
@@ -587,30 +616,41 @@
             submitBtn.innerHTML = '處理中...';
 
             try {
-                const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
-                await addDoc(collectionRef, {
-                    category: category,
-                    title: title,
-                    url: url,
-                    createdAt: serverTimestamp()
-                });
+                if (currentEditId) {
+                    // 更新現有資料模式
+                    const docRef = doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', currentEditId);
+                    await updateDoc(docRef, {
+                        category: category,
+                        title: title,
+                        url: url,
+                        updatedAt: serverTimestamp() // 記錄最後更新時間
+                    });
+                } else {
+                    // 新增資料模式
+                    const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+                    await addDoc(collectionRef, {
+                        category: category,
+                        title: title,
+                        url: url,
+                        createdAt: serverTimestamp()
+                    });
+                }
                 
-                // 成功後關閉 Modal
                 closeModal();
                 
-                // UX優化：如果新增的分類與目前過濾的分類不同，自動跳轉過去
+                // UX優化：如果操作的分類與目前過濾的分類不同，自動跳轉過去
                 if (activeCategoryFilter !== '全部' && activeCategoryFilter !== category) {
                     activeCategoryFilter = category;
                     renderUI();
                 }
 
             } catch (error) {
-                console.error("新增失敗:", error);
-                errorMessage.textContent = "新增失敗，請稍後再試。";
+                console.error("儲存失敗:", error);
+                errorMessage.textContent = "儲存失敗，請稍後再試。";
                 errorMessage.classList.remove('hidden');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '儲存';
+                submitBtn.innerHTML = currentEditId ? '更新' : '儲存';
             }
         });
 
@@ -639,31 +679,20 @@
             );
         }
 
-        // --- PWA Service Worker 與安裝邏輯 ---
+        // PWA Service Worker (略... 已在上方設定)
         let deferredPrompt;
         const installBtn = document.getElementById('install-pwa-btn');
 
-        // 動態生成並註冊 Service Worker
-        // 為了符合單一檔案規則，我們使用 Blob 來註冊 SW
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
                     const CACHE_NAME = 'simple-bookmarks-v1';
-                    // 為了確保 Firebase 能夠正常運作，我們只快取基本外殼，網路請求仍優先
-                    self.addEventListener('install', (event) => {
-                        self.skipWaiting();
-                    });
-                    
-                    self.addEventListener('activate', (event) => {
-                        event.waitUntil(clients.claim());
-                    });
-                    
+                    self.addEventListener('install', (event) => { self.skipWaiting(); });
+                    self.addEventListener('activate', (event) => { event.waitUntil(clients.claim()); });
                     self.addEventListener('fetch', (event) => {
-                        // 忽略 Firebase 等外部 API 的快取，只處理導航要求
                         if (event.request.mode === 'navigate') {
                             event.respondWith(
                                 fetch(event.request).catch(() => {
-                                    // 網路離線時回傳快取，或簡單的離線頁面
                                     return new Response('目前離線，請檢查網路連線。', {
                                         headers: { 'Content-Type': 'text/html; charset=utf-8' }
                                     });
@@ -674,50 +703,28 @@
                 `;
                 const swBlob = new Blob([swCode], { type: 'application/javascript' });
                 const swUrl = URL.createObjectURL(swBlob);
-                
-                navigator.serviceWorker.register(swUrl)
-                    .then(registration => {
-                        console.log('ServiceWorker 註冊成功');
-                    })
-                    .catch(err => {
-                        console.log('ServiceWorker 註冊失敗: ', err);
-                    });
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Fail:', err));
             });
         }
 
-        // 攔截 PWA 安裝提示
         window.addEventListener('beforeinstallprompt', (e) => {
-            // 防止瀏覽器預設的迷你安裝列出現
             e.preventDefault();
-            // 保存事件以便稍後觸發
             deferredPrompt = e;
-            // 顯示我們自定義的安裝按鈕
             installBtn.classList.remove('hidden');
         });
 
-        // 綁定安裝按鈕點擊事件
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
-                // 顯示安裝提示
                 deferredPrompt.prompt();
-                // 等待使用者回應
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('使用者接受安裝 PWA');
-                    installBtn.classList.add('hidden'); // 安裝後隱藏按鈕
-                } else {
-                    console.log('使用者拒絕安裝 PWA');
-                }
-                // 無論結果如何，清除保存的事件
+                if (outcome === 'accepted') installBtn.classList.add('hidden');
                 deferredPrompt = null;
             }
         });
 
-        // 偵測是否已經成功安裝 (例如使用者從瀏覽器選單手動安裝)
         window.addEventListener('appinstalled', () => {
             installBtn.classList.add('hidden');
             deferredPrompt = null;
-            console.log('PWA 安裝完成');
         });
     </script>
 </body>

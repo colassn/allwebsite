@@ -2,8 +2,42 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>個人網址導航</title>
+    <!-- PWA Meta 標籤 -->
+    <meta name="theme-color" content="#fafafa">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="書籤導航">
+    
+    <!-- 動態生成並注入 Web App Manifest -->
+    <script>
+        const manifestConfig = {
+            "name": "個人網址導航",
+            "short_name": "書籤導航",
+            "description": "簡約且高效率的個人網址管理工具",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#fafafa",
+            "theme_color": "#4f46e5",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBmaWxsPSIjNGY0NmU1Ij48cGF0aCBkPSJNMzUyIDMySDE2MEMxMDcuNSAzMiA2NCA3NS41IDY0IDEyOHYzODRsMTkyLTExMiAxOTIgMTEyVjEyOGMwLTUyLjUtNDMuNS05Ni05Ni05NnoiLz48L3N2Zz4=",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                },
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBmaWxsPSIjNGY0NmU1Ij48cGF0aCBkPSJNMzUyIDMySDE2MEMxMDcuNSAzMiA2NCA3NS41IDY0IDEyOHYzODRsMTkyLTExMiAxOTIgMTEyVjEyOGMwLTUyLjUtNDMuNS05Ni05Ni05NnoiLz48L3N2Zz4=",
+                    "sizes": "512x512",
+                    "type": "image/svg+xml"
+                }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestConfig)], {type: 'application/json'});
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        document.write(`<link rel="manifest" href="${manifestUrl}">`);
+    </script>
+    
     <!-- 引入 Tailwind CSS 進行排版 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -85,6 +119,11 @@
                 </span>
                 <span>連線中...</span>
             </div>
+            <!-- PWA 安裝按鈕 (預設隱藏，由 JS 控制顯示) -->
+            <button id="install-pwa-btn" class="hidden simple-button bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span class="hidden sm:inline">安裝 App</span>
+            </button>
             <!-- 新增按鈕 -->
             <button id="open-modal-btn" class="simple-button px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -599,6 +638,87 @@
                 }[tag] || tag)
             );
         }
+
+        // --- PWA Service Worker 與安裝邏輯 ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-pwa-btn');
+
+        // 動態生成並註冊 Service Worker
+        // 為了符合單一檔案規則，我們使用 Blob 來註冊 SW
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'simple-bookmarks-v1';
+                    // 為了確保 Firebase 能夠正常運作，我們只快取基本外殼，網路請求仍優先
+                    self.addEventListener('install', (event) => {
+                        self.skipWaiting();
+                    });
+                    
+                    self.addEventListener('activate', (event) => {
+                        event.waitUntil(clients.claim());
+                    });
+                    
+                    self.addEventListener('fetch', (event) => {
+                        // 忽略 Firebase 等外部 API 的快取，只處理導航要求
+                        if (event.request.mode === 'navigate') {
+                            event.respondWith(
+                                fetch(event.request).catch(() => {
+                                    // 網路離線時回傳快取，或簡單的離線頁面
+                                    return new Response('目前離線，請檢查網路連線。', {
+                                        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                                    });
+                                })
+                            );
+                        }
+                    });
+                `;
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => {
+                        console.log('ServiceWorker 註冊成功');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker 註冊失敗: ', err);
+                    });
+            });
+        }
+
+        // 攔截 PWA 安裝提示
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // 防止瀏覽器預設的迷你安裝列出現
+            e.preventDefault();
+            // 保存事件以便稍後觸發
+            deferredPrompt = e;
+            // 顯示我們自定義的安裝按鈕
+            installBtn.classList.remove('hidden');
+        });
+
+        // 綁定安裝按鈕點擊事件
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // 顯示安裝提示
+                deferredPrompt.prompt();
+                // 等待使用者回應
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('使用者接受安裝 PWA');
+                    installBtn.classList.add('hidden'); // 安裝後隱藏按鈕
+                } else {
+                    console.log('使用者拒絕安裝 PWA');
+                }
+                // 無論結果如何，清除保存的事件
+                deferredPrompt = null;
+            }
+        });
+
+        // 偵測是否已經成功安裝 (例如使用者從瀏覽器選單手動安裝)
+        window.addEventListener('appinstalled', () => {
+            installBtn.classList.add('hidden');
+            deferredPrompt = null;
+            console.log('PWA 安裝完成');
+        });
     </script>
 </body>
 </html>

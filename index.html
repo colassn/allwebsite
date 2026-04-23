@@ -119,12 +119,6 @@
                 </span>
                 <span>連線中...</span>
             </div>
-            
-            <!-- 匯入舊資料按鈕 (預設隱藏，偵測到舊資料才顯示) -->
-            <button id="recover-old-data-btn" class="hidden simple-button bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <span class="hidden sm:inline">匯入舊資料</span>
-            </button>
 
             <!-- PWA 安裝按鈕 -->
             <button id="install-pwa-btn" class="hidden simple-button bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
@@ -267,7 +261,6 @@
         const emptyState = document.getElementById('empty-state');
         const linkCount = document.getElementById('link-count');
         const errorMessage = document.getElementById('error-message');
-        const recoverOldDataBtn = document.getElementById('recover-old-data-btn');
 
         // Modal 元素
         const addModal = document.getElementById('add-modal');
@@ -412,7 +405,7 @@
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('cursor-not-allowed');
                 loadData();
-                checkOldData(); // 登入成功後檢查是否有舊資料
+                checkAndMigrateOldData(); // 登入成功後自動檢查並轉移舊資料
             } else {
                 currentUser = null;
             }
@@ -420,54 +413,43 @@
 
         initAuth();
 
-        // 檢查個人專屬空間是否有遺留的舊資料
-        async function checkOldData() {
+        // 檢查個人專屬空間是否有遺留的舊資料，並自動複製轉移
+        async function checkAndMigrateOldData() {
             if (!currentUser) return;
-            try {
-                const personalRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
-                const snap = await getDocs(personalRef);
-                if (!snap.empty) {
-                    // 如果有舊資料，顯示匯入按鈕
-                    recoverOldDataBtn.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error("檢查舊資料失敗:", error);
-            }
-        }
-
-        // 執行匯入舊資料
-        recoverOldDataBtn.addEventListener('click', async () => {
-            if (!currentUser) return;
-            recoverOldDataBtn.disabled = true;
-            recoverOldDataBtn.innerHTML = '匯入中...';
-            
             try {
                 const personalRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
                 const publicRef = collection(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks');
                 const snap = await getDocs(personalRef);
-
-                // 將每一筆舊資料複製到新的共用空間，並刪除舊的
-                snap.forEach(async (documentSnapshot) => {
-                    const data = documentSnapshot.data();
-                    await addDoc(publicRef, {
-                        category: data.category || '未分類',
-                        title: data.title,
-                        url: data.url,
-                        createdAt: data.createdAt || serverTimestamp()
+                
+                if (!snap.empty) {
+                    console.log("偵測到舊有個人資料，正在自動轉移至公開空間...");
+                    authStatus.innerHTML = `<span class="text-orange-500 font-medium">自動匯入舊資料中...</span>`;
+                    
+                    // 將每一筆舊資料複製到新的共用空間，並刪除舊的
+                    snap.forEach(async (documentSnapshot) => {
+                        const data = documentSnapshot.data();
+                        await addDoc(publicRef, {
+                            category: data.category || '未分類',
+                            title: data.title,
+                            url: data.url,
+                            createdAt: data.createdAt || serverTimestamp()
+                        });
+                        await deleteDoc(doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', documentSnapshot.id));
                     });
-                    await deleteDoc(doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', documentSnapshot.id));
-                });
-
-                recoverOldDataBtn.innerHTML = '✅ 匯入完成';
-                setTimeout(() => {
-                    recoverOldDataBtn.classList.add('hidden');
-                }, 2000);
+                    
+                    setTimeout(() => {
+                        authStatus.innerHTML = `
+                            <span class="relative flex h-2 w-2">
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span class="text-emerald-700 font-medium">已連線</span>
+                        `;
+                    }, 3000);
+                }
             } catch (error) {
-                console.error("匯入失敗:", error);
-                recoverOldDataBtn.disabled = false;
-                recoverOldDataBtn.innerHTML = '匯入失敗，重試';
+                console.error("自動檢查或匯入舊資料失敗:", error);
             }
-        });
+        }
 
         // 3. 讀取並顯示資料
         function loadData() {

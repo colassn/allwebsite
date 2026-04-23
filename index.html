@@ -119,6 +119,13 @@
                 </span>
                 <span>連線中...</span>
             </div>
+            
+            <!-- 匯入舊資料按鈕 (預設隱藏，偵測到舊資料才顯示) -->
+            <button id="recover-old-data-btn" class="hidden simple-button bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span class="hidden sm:inline">匯入舊資料</span>
+            </button>
+
             <!-- PWA 安裝按鈕 -->
             <button id="install-pwa-btn" class="hidden simple-button bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -212,8 +219,8 @@
         // 匯入 Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // 加入 updateDoc 支援編輯功能
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // 加入 updateDoc 支援編輯功能，加入 getDocs 支援讀取舊資料
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // 1. 初始化 Firebase 設定
         let firebaseConfig;
@@ -260,6 +267,7 @@
         const emptyState = document.getElementById('empty-state');
         const linkCount = document.getElementById('link-count');
         const errorMessage = document.getElementById('error-message');
+        const recoverOldDataBtn = document.getElementById('recover-old-data-btn');
 
         // Modal 元素
         const addModal = document.getElementById('add-modal');
@@ -404,12 +412,62 @@
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('cursor-not-allowed');
                 loadData();
+                checkOldData(); // 登入成功後檢查是否有舊資料
             } else {
                 currentUser = null;
             }
         });
 
         initAuth();
+
+        // 檢查個人專屬空間是否有遺留的舊資料
+        async function checkOldData() {
+            if (!currentUser) return;
+            try {
+                const personalRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+                const snap = await getDocs(personalRef);
+                if (!snap.empty) {
+                    // 如果有舊資料，顯示匯入按鈕
+                    recoverOldDataBtn.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("檢查舊資料失敗:", error);
+            }
+        }
+
+        // 執行匯入舊資料
+        recoverOldDataBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            recoverOldDataBtn.disabled = true;
+            recoverOldDataBtn.innerHTML = '匯入中...';
+            
+            try {
+                const personalRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+                const publicRef = collection(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks');
+                const snap = await getDocs(personalRef);
+
+                // 將每一筆舊資料複製到新的共用空間，並刪除舊的
+                snap.forEach(async (documentSnapshot) => {
+                    const data = documentSnapshot.data();
+                    await addDoc(publicRef, {
+                        category: data.category || '未分類',
+                        title: data.title,
+                        url: data.url,
+                        createdAt: data.createdAt || serverTimestamp()
+                    });
+                    await deleteDoc(doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', documentSnapshot.id));
+                });
+
+                recoverOldDataBtn.innerHTML = '✅ 匯入完成';
+                setTimeout(() => {
+                    recoverOldDataBtn.classList.add('hidden');
+                }, 2000);
+            } catch (error) {
+                console.error("匯入失敗:", error);
+                recoverOldDataBtn.disabled = false;
+                recoverOldDataBtn.innerHTML = '匯入失敗，重試';
+            }
+        });
 
         // 3. 讀取並顯示資料
         function loadData() {
@@ -418,7 +476,8 @@
             loadingIndicator.classList.remove('hidden');
             emptyState.classList.add('hidden');
 
-            const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+            // 改為指向公開共用的資料夾，讓所有裝置都能讀取同一個資料庫
+            const collectionRef = collection(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks');
 
             unsubscribeSnapshot = onSnapshot(collectionRef, (snapshot) => {
                 loadingIndicator.classList.add('hidden');
@@ -617,8 +676,8 @@
 
             try {
                 if (currentEditId) {
-                    // 更新現有資料模式
-                    const docRef = doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', currentEditId);
+                    // 更新現有資料模式 (改為公開路徑)
+                    const docRef = doc(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks', currentEditId);
                     await updateDoc(docRef, {
                         category: category,
                         title: title,
@@ -626,8 +685,8 @@
                         updatedAt: serverTimestamp() // 記錄最後更新時間
                     });
                 } else {
-                    // 新增資料模式
-                    const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+                    // 新增資料模式 (改為公開路徑)
+                    const collectionRef = collection(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks');
                     await addDoc(collectionRef, {
                         category: category,
                         title: title,
@@ -658,7 +717,8 @@
         async function deleteLink(docId) {
             if (!currentUser) return;
             try {
-                const docRef = doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', docId);
+                // 刪除資料 (改為公開路徑)
+                const docRef = doc(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks', docId);
                 await deleteDoc(docRef);
             } catch (error) {
                 console.error("刪除失敗:", error);

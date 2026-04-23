@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人網址導航</title>
+    <!-- 引入 Tailwind CSS 進行排版 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #fafafa;
+            color: #333333;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .simple-card {
+            background: #ffffff;
+            border: 1px solid #eaeaea;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .simple-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            border-color: #d1d5db;
+        }
+
+        .simple-input {
+            background: #f9f9f9;
+            border: 1px solid #e5e7eb;
+            color: #1f2937;
+            transition: all 0.2s ease;
+        }
+
+        .simple-input:focus {
+            outline: none;
+            background: #ffffff;
+            border-color: #9ca3af;
+            box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.1);
+        }
+
+        .simple-button {
+            background: #4f46e5; /* 靛藍色 */
+            color: #ffffff;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .simple-button:hover:not(:disabled) {
+            background: #4338ca;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+        }
+
+        .simple-button:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            box-shadow: none;
+        }
+
+        /* 隱藏橫向滾動條 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
+
+    <!-- 頂部標題與狀態 -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-10 pt-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">我的書籤</h1>
+            <p class="text-sm text-gray-500 mt-1">快速存取常用網站</p>
+        </div>
+        <div class="flex items-center gap-3 sm:gap-4">
+            <div id="auth-status" class="hidden sm:flex text-xs items-center space-x-2 bg-gray-100 px-3 py-1.5 rounded-full text-gray-600">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-gray-500"></span>
+                </span>
+                <span>連線中...</span>
+            </div>
+            <!-- 新增按鈕 -->
+            <button id="open-modal-btn" class="simple-button px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                新增
+            </button>
+        </div>
+    </header>
+
+    <!-- 主內容區域 -->
+    <main class="w-full max-w-4xl flex flex-col gap-8">
+        
+        <!-- 卡片網格區域 -->
+        <section>
+            <div class="flex items-center justify-between mb-4 px-1">
+                <h2 class="text-sm font-medium text-gray-700">已儲存的連結</h2>
+                <span id="link-count" class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full hidden">0</span>
+            </div>
+            
+            <!-- 分類過濾器清單 -->
+            <div id="category-filters" class="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+                <!-- 標籤將由 JavaScript 自動產生 -->
+            </div>
+
+            <div id="loading-indicator" class="text-gray-400 text-sm py-12 text-center hidden">
+                載入資料中...
+            </div>
+
+            <div id="categories-container" class="flex flex-col gap-8">
+                <!-- 分類與卡片將會由 JavaScript 動態生成在這裡 -->
+            </div>
+            
+            <div id="empty-state" class="text-center py-16 hidden bg-white rounded-2xl border border-gray-100 border-dashed">
+                <div class="text-indigo-500 mb-3 bg-indigo-50 w-16 h-16 mx-auto rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                </div>
+                <p class="text-gray-500 text-sm">目前還沒有書籤，點擊右上角「新增」吧！</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 新增書籤 Modal 彈出視窗 -->
+    <div id="add-modal" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div id="modal-content" class="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-300 mx-4">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-lg font-bold text-gray-900">新增書籤</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="add-link-form" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">分類</label>
+                    <div class="flex gap-2">
+                        <select id="link-category-select" class="simple-input flex-1 px-4 py-2.5 rounded-lg text-sm">
+                            <option value="未分類">未分類</option>
+                        </select>
+                        <button type="button" id="toggle-category-btn" class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200 transition-colors font-medium whitespace-nowrap">
+                            + 新分類
+                        </button>
+                    </div>
+                    <input type="text" id="link-category-new" placeholder="輸入新分類名稱 (例如：工作、娛樂)" class="simple-input w-full px-4 py-2.5 rounded-lg text-sm mt-3 hidden">
+                </div>
+                <div>
+                    <label for="link-title" class="block text-sm font-medium text-gray-700 mb-1">網站標題</label>
+                    <input type="text" id="link-title" required placeholder="例如：Google" class="simple-input w-full px-4 py-2.5 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label for="link-url" class="block text-sm font-medium text-gray-700 mb-1">完整網址</label>
+                    <input type="url" id="link-url" required placeholder="例如：https://google.com" class="simple-input w-full px-4 py-2.5 rounded-lg text-sm">
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" id="cancel-modal-btn" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
+                        取消
+                    </button>
+                    <button type="submit" id="submit-btn" disabled class="simple-button px-5 py-2.5 rounded-lg text-sm cursor-not-allowed">
+                        儲存
+                    </button>
+                </div>
+                <p id="error-message" class="text-red-500 text-xs mt-1 hidden"></p>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // 匯入 Firebase SDK (使用 v11 版本)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 1. 初始化 Firebase 設定
+        let firebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // 使用你提供的設定
+            firebaseConfig = {
+                apiKey: "AIzaSyDOgR3gRavnvf7l_87_Jn7Jp4sCrG3_eFs",
+                authDomain: "mixed-d827c.firebaseapp.com",
+                projectId: "mixed-d827c",
+                storageBucket: "mixed-d827c.firebasestorage.app",
+                messagingSenderId: "37148216209",
+                appId: "1:37148216209:web:033410c7cc6437f71c6830",
+                measurementId: "G-JTQJT3DM48"
+            };
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const systemAppId = typeof __app_id !== 'undefined' ? __app_id : 'simple-bookmarks-1';
+        
+        let currentUser = null;
+        let unsubscribeSnapshot = null;
+        let globalBookmarks = [];
+        let activeCategoryFilter = '全部';
+        let isAddingNewCategory = false;
+
+        // DOM 元素
+        const authStatus = document.getElementById('auth-status');
+        const addLinkForm = document.getElementById('add-link-form');
+        const categorySelect = document.getElementById('link-category-select');
+        const categoryNewInput = document.getElementById('link-category-new');
+        const toggleCategoryBtn = document.getElementById('toggle-category-btn');
+        const categoryFilters = document.getElementById('category-filters');
+        const linkTitleInput = document.getElementById('link-title');
+        const linkUrlInput = document.getElementById('link-url');
+        const submitBtn = document.getElementById('submit-btn');
+        const categoriesContainer = document.getElementById('categories-container');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const emptyState = document.getElementById('empty-state');
+        const linkCount = document.getElementById('link-count');
+        const errorMessage = document.getElementById('error-message');
+
+        // 用於為卡片圖示產生不同顏色的陣列 (馬卡龍色系)
+        const iconColors = [
+            'bg-red-100 text-red-600', 'bg-orange-100 text-orange-600', 
+            'bg-amber-100 text-amber-600', 'bg-green-100 text-green-600', 
+            'bg-emerald-100 text-emerald-600', 'bg-teal-100 text-teal-600', 
+            'bg-cyan-100 text-cyan-600', 'bg-blue-100 text-blue-600', 
+            'bg-indigo-100 text-indigo-600', 'bg-violet-100 text-violet-600', 
+            'bg-purple-100 text-purple-600', 'bg-fuchsia-100 text-fuchsia-600', 
+            'bg-pink-100 text-pink-600', 'bg-rose-100 text-rose-600'
+        ];
+
+        // 根據標題計算並獲取固定的顏色
+        function getIconColor(title) {
+            let hash = 0;
+            for (let i = 0; i < title.length; i++) {
+                hash = title.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return iconColors[Math.abs(hash) % iconColors.length];
+        }
+
+        // Modal 元素
+        const addModal = document.getElementById('add-modal');
+        const modalContent = document.getElementById('modal-content');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+
+        // Modal 控制邏輯
+        function openModal() {
+            addModal.classList.remove('hidden');
+            // 延遲一點點以觸發 CSS 動畫
+            setTimeout(() => {
+                addModal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+                linkTitleInput.focus();
+            }, 10);
+        }
+
+        // 重置分類切換按鈕狀態
+        function resetCategoryToggle() {
+            isAddingNewCategory = false;
+            categorySelect.classList.remove('hidden');
+            categoryNewInput.classList.add('hidden');
+            toggleCategoryBtn.textContent = '+ 新分類';
+            toggleCategoryBtn.classList.remove('bg-indigo-100', 'text-indigo-700');
+            toggleCategoryBtn.classList.add('bg-gray-100', 'text-gray-600');
+            categoryNewInput.value = '';
+        }
+
+        // 切換現有分類/新分類輸入框
+        toggleCategoryBtn.addEventListener('click', () => {
+            isAddingNewCategory = !isAddingNewCategory;
+            if (isAddingNewCategory) {
+                categorySelect.classList.add('hidden');
+                categoryNewInput.classList.remove('hidden');
+                toggleCategoryBtn.textContent = '取消新增';
+                toggleCategoryBtn.classList.remove('bg-gray-100', 'text-gray-600');
+                toggleCategoryBtn.classList.add('bg-indigo-100', 'text-indigo-700');
+                categoryNewInput.focus();
+            } else {
+                resetCategoryToggle();
+            }
+        });
+
+        function closeModal() {
+            addModal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                addModal.classList.add('hidden');
+                // 關閉時自動清空表單
+                addLinkForm.reset();
+                resetCategoryToggle();
+                errorMessage.classList.add('hidden');
+            }, 300);
+        }
+
+        openModalBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+        
+        // 點擊半透明背景也能關閉 Modal
+        addModal.addEventListener('click', (e) => {
+            if (e.target === addModal) closeModal();
+        });
+
+        // 2. 身份驗證 (匿名登入)
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("登入失敗:", error);
+                authStatus.innerHTML = `<span class="text-red-500">連線失敗</span>`;
+            }
+        };
+
+        // 監聽登入狀態
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                authStatus.innerHTML = `
+                    <span class="relative flex h-2 w-2">
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-emerald-700 font-medium">已連線</span>
+                `;
+                
+                // 啟用按鈕
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('cursor-not-allowed');
+                
+                // 開始載入資料
+                loadData();
+            } else {
+                currentUser = null;
+            }
+        });
+
+        // 啟動登入
+        initAuth();
+
+        // 3. 讀取並顯示資料
+        function loadData() {
+            if (!currentUser) return;
+            
+            loadingIndicator.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            // 路徑規則：/artifacts/{appId}/users/{userId}/{collectionName}
+            const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+
+            // 實時監聽資料庫更新
+            unsubscribeSnapshot = onSnapshot(collectionRef, (snapshot) => {
+                loadingIndicator.classList.add('hidden');
+                
+                globalBookmarks = [];
+                snapshot.forEach((doc) => {
+                    globalBookmarks.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderUI();
+            }, (error) => {
+                console.error("獲取資料失敗:", error);
+                loadingIndicator.classList.add('hidden');
+                errorMessage.textContent = "載入失敗，請檢查網路連線。";
+                errorMessage.classList.remove('hidden');
+            });
+        }
+
+        // 負責更新畫面與過濾分類的核心函數
+        function renderUI() {
+            categoriesContainer.innerHTML = '';
+            categoryFilters.innerHTML = '';
+            
+            // 更新數量標籤
+            if (globalBookmarks.length > 0) {
+                linkCount.textContent = globalBookmarks.length;
+                linkCount.classList.remove('hidden');
+            } else {
+                linkCount.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                categorySelect.innerHTML = '<option value="未分類">未分類</option>';
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+
+            // 分組資料與提取所有不重複的分類
+            const groupedBookmarks = {};
+            const categoriesSet = new Set();
+
+            globalBookmarks.forEach((bookmark) => {
+                const category = bookmark.category || '未分類';
+                categoriesSet.add(category);
+                
+                if (!groupedBookmarks[category]) {
+                    groupedBookmarks[category] = [];
+                }
+                groupedBookmarks[category].push(bookmark);
+            });
+
+            // 排序分類 (將 '未分類' 放到最後，其他按字母排)
+            const sortedCategories = Array.from(categoriesSet).sort((a, b) => {
+                if (a === '未分類') return 1;
+                if (b === '未分類') return -1;
+                return a.localeCompare(b);
+            });
+
+            // --- 渲染分類過濾器 (Pills) ---
+            const allBtn = document.createElement('button');
+            allBtn.textContent = '全部';
+            allBtn.className = `px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${activeCategoryFilter === '全部' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`;
+            allBtn.onclick = () => { activeCategoryFilter = '全部'; renderUI(); };
+            categoryFilters.appendChild(allBtn);
+
+            sortedCategories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat;
+                btn.className = `px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors border ${activeCategoryFilter === cat ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`;
+                btn.onclick = () => { activeCategoryFilter = cat; renderUI(); };
+                categoryFilters.appendChild(btn);
+            });
+
+            // --- 更新新增表單的下拉選單 ---
+            const currentSelectValue = categorySelect.value;
+            categorySelect.innerHTML = '';
+            sortedCategories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+            // 嘗試保留使用者原本的選擇或預設選中當前過濾的分類
+            if (sortedCategories.includes(currentSelectValue)) {
+                categorySelect.value = currentSelectValue;
+            } else if (activeCategoryFilter !== '全部' && sortedCategories.includes(activeCategoryFilter)) {
+                categorySelect.value = activeCategoryFilter;
+            }
+
+            // --- 渲染書籤卡片 ---
+            const categoriesToRender = activeCategoryFilter === '全部' ? sortedCategories : [activeCategoryFilter];
+
+            categoriesToRender.forEach(category => {
+                if (!groupedBookmarks[category]) return; // 防呆
+                
+                const bookmarks = groupedBookmarks[category];
+                
+                // 卡片按時間排序 (新的在前面)
+                bookmarks.sort((a, b) => {
+                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                // 創建分類標題與容器
+                const categorySection = document.createElement('div');
+                categorySection.className = "flex flex-col gap-3";
+                
+                // 只有選擇「全部」時才顯示每個區塊的分類小標題
+                if (activeCategoryFilter === '全部') {
+                    const categoryHeader = document.createElement('h3');
+                    categoryHeader.className = "text-sm font-bold text-gray-500 tracking-wide mb-1 mt-2 flex items-center gap-2";
+                    categoryHeader.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-400"></span>${escapeHTML(category)}`;
+                    categorySection.appendChild(categoryHeader);
+                }
+
+                // 渲染該分類下的卡片
+                bookmarks.forEach(bookmark => {
+                    const card = document.createElement('a');
+                    card.href = bookmark.url;
+                    card.target = "_blank";
+                    card.rel = "noopener noreferrer";
+                    card.className = "simple-card p-4 flex items-center justify-between group cursor-pointer text-left decoration-none";
+                    
+                    let domain = '';
+                    try { 
+                        domain = new URL(bookmark.url).hostname.replace('www.', ''); 
+                    } catch(e) { 
+                        domain = bookmark.url; 
+                    }
+
+                    const initial = bookmark.title ? bookmark.title.charAt(0).toUpperCase() : '?';
+                    const colorClass = getIconColor(bookmark.title || '?');
+
+                    card.innerHTML = `
+                        <div class="flex items-center gap-4 overflow-hidden">
+                            <div class="w-10 h-10 rounded-lg ${colorClass} flex items-center justify-center flex-shrink-0 font-bold shadow-sm">
+                                ${initial}
+                            </div>
+                            <div class="overflow-hidden">
+                                <h3 class="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">${escapeHTML(bookmark.title)}</h3>
+                                <p class="text-xs text-gray-500 truncate mt-0.5">${escapeHTML(domain)}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-shrink-0 ml-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                            <button class="delete-btn text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded transition-colors" data-id="${bookmark.id}" title="刪除">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    `;
+                    
+                    const deleteBtn = card.querySelector('.delete-btn');
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if(confirm('確定要刪除這個書籤嗎？')) {
+                            deleteLink(bookmark.id);
+                        }
+                    });
+
+                    categorySection.appendChild(card);
+                });
+
+                categoriesContainer.appendChild(categorySection);
+            });
+        }
+
+        // 4. 新增資料
+        addLinkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            errorMessage.classList.add('hidden');
+            
+            // 判斷當下要抓取選單還是新輸入的值
+            const category = isAddingNewCategory 
+                ? (categoryNewInput.value.trim() || '未分類') 
+                : categorySelect.value;
+                
+            const title = linkTitleInput.value.trim();
+            let url = linkUrlInput.value.trim();
+
+            // 確保網址格式
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+
+            if (!title || !url) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '處理中...';
+
+            try {
+                const collectionRef = collection(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks');
+                await addDoc(collectionRef, {
+                    category: category,
+                    title: title,
+                    url: url,
+                    createdAt: serverTimestamp()
+                });
+                
+                // 成功後關閉 Modal
+                closeModal();
+                
+                // UX優化：如果新增的分類與目前過濾的分類不同，自動跳轉過去
+                if (activeCategoryFilter !== '全部' && activeCategoryFilter !== category) {
+                    activeCategoryFilter = category;
+                    renderUI();
+                }
+
+            } catch (error) {
+                console.error("新增失敗:", error);
+                errorMessage.textContent = "新增失敗，請稍後再試。";
+                errorMessage.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '儲存';
+            }
+        });
+
+        // 5. 刪除資料
+        async function deleteLink(docId) {
+            if (!currentUser) return;
+            try {
+                const docRef = doc(db, 'artifacts', systemAppId, 'users', currentUser.uid, 'bookmarks', docId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("刪除失敗:", error);
+                alert("刪除失敗，請稍後再試");
+            }
+        }
+
+        // 輔助函數：防止 XSS
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>

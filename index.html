@@ -145,10 +145,34 @@
     <!-- 主內容區域 -->
     <main class="w-full max-w-4xl flex flex-col gap-8">
         
+        <!-- 專業資料儀表板 (Dashboard) -->
+        <section id="dashboard-panel" class="grid grid-cols-3 gap-3 sm:gap-6 hidden">
+            <!-- 總網站數 -->
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full opacity-50"></div>
+                <span class="text-xs font-medium text-gray-500 mb-1 z-10">總網站數</span>
+                <span id="stat-total" class="text-2xl sm:text-3xl font-bold text-gray-900 z-10">0</span>
+            </div>
+            
+            <!-- 總標籤數 -->
+            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-indigo-50 rounded-full opacity-50"></div>
+                <span class="text-xs font-medium text-gray-500 mb-1 z-10">已建立標籤</span>
+                <span id="stat-tags" class="text-2xl sm:text-3xl font-bold text-indigo-600 z-10">0</span>
+            </div>
+            
+            <!-- 未分類網站 (可點擊過濾) -->
+            <div id="stat-untagged-card" title="點擊查看未分類網站" class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center relative overflow-hidden cursor-pointer transition-all duration-200 group">
+                <div id="stat-untagged-bg" class="absolute -right-4 -top-4 w-16 h-16 bg-gray-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                <span id="stat-untagged-label" class="text-xs font-medium text-gray-500 mb-1 z-10 transition-colors">待補標籤</span>
+                <span id="stat-untagged" class="text-2xl sm:text-3xl font-bold text-gray-900 z-10 transition-colors">0</span>
+            </div>
+        </section>
+
         <!-- 卡片網格區域 -->
         <section>
             <div class="flex items-center justify-between mb-4 px-1">
-                <h2 class="text-sm font-medium text-gray-700">已儲存的連結</h2>
+                <h2 class="text-sm font-medium text-gray-700">書籤清單</h2>
                 <span id="link-count" class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full hidden">0</span>
             </div>
             
@@ -282,6 +306,15 @@
         const emptyState = document.getElementById('empty-state');
         const linkCount = document.getElementById('link-count');
         const errorMessage = document.getElementById('error-message');
+
+        // 儀表板元素
+        const dashboardPanel = document.getElementById('dashboard-panel');
+        const statTotal = document.getElementById('stat-total');
+        const statTags = document.getElementById('stat-tags');
+        const statUntagged = document.getElementById('stat-untagged');
+        const statUntaggedLabel = document.getElementById('stat-untagged-label');
+        const statUntaggedCard = document.getElementById('stat-untagged-card');
+        const statUntaggedBg = document.getElementById('stat-untagged-bg');
 
         // Modal 元素
         const addModal = document.getElementById('add-modal');
@@ -579,10 +612,13 @@
             
             // 由於一個書籤可能有兩個標籤，我們計算獨立的書籤總數
             if (globalBookmarks.length > 0) {
+                // 顯示儀表板與數量
+                dashboardPanel.classList.remove('hidden');
                 linkCount.textContent = globalBookmarks.length;
-                linkCount.classList.remove('hidden');
+                // linkCount.classList.remove('hidden'); // 改用儀表板，隱藏原本的小標籤
             } else {
                 linkCount.classList.add('hidden');
+                dashboardPanel.classList.add('hidden');
                 emptyState.classList.remove('hidden');
                 return;
             }
@@ -593,10 +629,16 @@
             // 變成允許一個書籤出現在多個 category 的陣列中
             const groupedBookmarks = {};
             const categoriesSet = new Set();
+            let untaggedCount = 0; // 計算未分類的網站數量
 
             globalBookmarks.forEach((bookmark) => {
                 // 將資料庫的分類轉為標準陣列
                 const categoriesArray = normalizeCategories(bookmark.category);
+                
+                // 檢查是否完全沒有標籤 (只有 '未分類')
+                if (categoriesArray.length === 1 && categoriesArray[0] === '未分類') {
+                    untaggedCount++;
+                }
                 
                 categoriesArray.forEach(cat => {
                     categoriesSet.add(cat);
@@ -607,6 +649,35 @@
                     groupedBookmarks[cat].push(bookmark);
                 });
             });
+
+            // --- 更新儀表板數據 ---
+            statTotal.textContent = globalBookmarks.length;
+            // 標籤總數排除 '未分類'
+            statTags.textContent = Math.max(0, categoriesSet.size - (categoriesSet.has('未分類') ? 1 : 0));
+            statUntagged.textContent = untaggedCount;
+
+            if (untaggedCount > 0) {
+                // 有未分類網站時，顯示紅色警示風格
+                statUntagged.className = "text-2xl sm:text-3xl font-bold text-red-500 z-10 transition-colors";
+                statUntaggedLabel.className = "text-xs font-medium text-red-400 mb-1 z-10 transition-colors";
+                statUntaggedCard.className = "bg-red-50/30 p-4 rounded-xl border border-red-100 shadow-sm flex flex-col items-center justify-center relative overflow-hidden cursor-pointer hover:bg-red-50 hover:border-red-200 transition-all duration-200 group";
+                statUntaggedBg.className = "absolute -right-4 -top-4 w-16 h-16 bg-red-100 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500";
+                
+                // 點擊後自動過濾至「未分類」
+                statUntaggedCard.onclick = () => { 
+                    activeCategoryFilter = '未分類'; 
+                    renderUI(); 
+                    // 滾動到卡片區塊
+                    document.getElementById('category-filters').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                };
+            } else {
+                // 全部都有分類時，顯示綠色完成風格
+                statUntagged.className = "text-2xl sm:text-3xl font-bold text-emerald-500 z-10 transition-colors";
+                statUntaggedLabel.className = "text-xs font-medium text-emerald-600 mb-1 z-10 transition-colors";
+                statUntaggedCard.className = "bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center relative overflow-hidden cursor-default transition-all duration-200 group";
+                statUntaggedBg.className = "absolute -right-4 -top-4 w-16 h-16 bg-emerald-50 rounded-full opacity-50 transition-transform duration-500";
+                statUntaggedCard.onclick = null; // 移除點擊事件
+            }
 
             // 排序分類 (將 '未分類' 放到最後，其他按字母排)
             const sortedCategories = Array.from(categoriesSet).sort((a, b) => {

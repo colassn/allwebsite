@@ -101,6 +101,15 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        .tag-pill {
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+            background-color: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 sm:p-8">
@@ -119,7 +128,7 @@
                 </span>
                 <span>連線中...</span>
             </div>
-
+            
             <!-- PWA 安裝按鈕 -->
             <button id="install-pwa-btn" class="hidden simple-button bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-sm text-white">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -177,16 +186,17 @@
             </div>
             <form id="add-link-form" class="flex flex-col gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">分類</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">分類標籤</label>
                     <div class="flex gap-2">
-                        <select id="link-category-select" class="simple-input flex-1 px-4 py-2.5 rounded-lg text-sm">
-                            <option value="未分類">未分類</option>
-                        </select>
-                        <button type="button" id="toggle-category-btn" class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200 transition-colors font-medium whitespace-nowrap">
-                            + 新分類
+                        <input type="text" id="tag-input" placeholder="輸入分類 (例如：工作)" class="simple-input flex-1 px-4 py-2.5 rounded-lg text-sm">
+                        <button type="button" id="add-tag-btn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors font-medium whitespace-nowrap">
+                            加入
                         </button>
                     </div>
-                    <input type="text" id="link-category-new" placeholder="輸入新分類名稱 (例如：工作、娛樂)" class="simple-input w-full px-4 py-2.5 rounded-lg text-sm mt-3 hidden">
+                    <div id="tags-container" class="flex flex-wrap gap-2 mt-3 empty:hidden">
+                        <!-- 動態生成標籤 -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">如果不加入任何標籤，將自動設為「未分類」</p>
                 </div>
                 <div>
                     <label for="link-title" class="block text-sm font-medium text-gray-700 mb-1">網站標題</label>
@@ -213,7 +223,6 @@
         // 匯入 Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // 加入 updateDoc 支援編輯功能，加入 getDocs 支援讀取舊資料
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // 1. 初始化 Firebase 設定
@@ -241,17 +250,20 @@
         let unsubscribeSnapshot = null;
         let globalBookmarks = [];
         let activeCategoryFilter = '全部';
-        let isAddingNewCategory = false;
         
         // 新增編輯狀態追蹤變數
         let currentEditId = null;
+        // 追蹤目前 Modal 中已經加入的標籤
+        let currentModalTags = [];
 
         // DOM 元素
         const authStatus = document.getElementById('auth-status');
         const addLinkForm = document.getElementById('add-link-form');
-        const categorySelect = document.getElementById('link-category-select');
-        const categoryNewInput = document.getElementById('link-category-new');
-        const toggleCategoryBtn = document.getElementById('toggle-category-btn');
+        // 取代原本的 categoryInput
+        const tagInput = document.getElementById('tag-input');
+        const addTagBtn = document.getElementById('add-tag-btn');
+        const tagsContainer = document.getElementById('tags-container');
+        
         const categoryFilters = document.getElementById('category-filters');
         const linkTitleInput = document.getElementById('link-title');
         const linkUrlInput = document.getElementById('link-url');
@@ -289,7 +301,70 @@
             return iconColors[Math.abs(hash) % iconColors.length];
         }
 
-        // Modal 控制邏輯 (現在支援傳入 editData)
+        // 輔助函數：標準化分類格式 (字串或陣列 -> 陣列)
+        function normalizeCategories(catData) {
+            if (!catData) return ['未分類'];
+            if (Array.isArray(catData)) {
+                const cleaned = catData.map(c => c.trim()).filter(c => c);
+                return cleaned.length > 0 ? cleaned : ['未分類'];
+            }
+            // 處理舊的單一字串，或逗號分隔字串
+            if (typeof catData === 'string') {
+                const cleaned = catData.split(',').map(c => c.trim()).filter(c => c);
+                return cleaned.length > 0 ? cleaned : ['未分類'];
+            }
+            return ['未分類'];
+        }
+
+        // 渲染 Modal 內的標籤 UI
+        function renderModalTags() {
+            tagsContainer.innerHTML = '';
+            currentModalTags.forEach((tag, index) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800';
+                tagEl.innerHTML = `
+                    ${escapeHTML(tag)}
+                    <button type="button" class="remove-tag-btn hover:text-indigo-900 focus:outline-none" data-index="${index}">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                `;
+                tagsContainer.appendChild(tagEl);
+            });
+
+            // 綁定刪除標籤事件
+            const removeBtns = tagsContainer.querySelectorAll('.remove-tag-btn');
+            removeBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.getAttribute('data-index'));
+                    currentModalTags.splice(idx, 1);
+                    renderModalTags();
+                });
+            });
+        }
+
+        // 新增標籤邏輯
+        function addTag() {
+            const val = tagInput.value.trim();
+            if (val && !currentModalTags.includes(val)) {
+                currentModalTags.push(val);
+                tagInput.value = '';
+                renderModalTags();
+            } else if (currentModalTags.includes(val)) {
+                tagInput.value = ''; // 已經存在的話直接清空輸入框
+            }
+        }
+
+        addTagBtn.addEventListener('click', addTag);
+        
+        // 讓在標籤輸入框按 Enter 也可以直接加入，且不會觸發整個表單送出
+        tagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addTag();
+            }
+        });
+
+        // Modal 控制邏輯
         function openModal(editData = null) {
             addModal.classList.remove('hidden');
             
@@ -302,24 +377,21 @@
                 linkTitleInput.value = editData.title;
                 linkUrlInput.value = editData.url;
                 
-                // 處理分類選單的預設值
-                const existingOptions = Array.from(categorySelect.options).map(opt => opt.value);
-                if (existingOptions.includes(editData.category)) {
-                    resetCategoryToggle(); // 使用選單模式
-                    categorySelect.value = editData.category;
-                } else {
-                    // 如果分類不存在於清單中（極少數情況），切換成手動輸入模式
-                    if(!isAddingNewCategory) toggleCategoryBtn.click();
-                    categoryNewInput.value = editData.category || '未分類';
-                }
+                // 載入標籤陣列
+                const cats = normalizeCategories(editData.category);
+                currentModalTags = (cats.includes('未分類') && cats.length === 1) ? [] : [...cats];
+                
             } else {
                 // 新增模式
                 currentEditId = null;
                 modalTitle.textContent = '新增書籤';
                 submitBtn.textContent = '儲存';
                 addLinkForm.reset();
-                resetCategoryToggle();
+                currentModalTags = [];
             }
+
+            tagInput.value = '';
+            renderModalTags();
 
             // 觸發 CSS 動畫
             setTimeout(() => {
@@ -330,32 +402,6 @@
             }, 10);
         }
 
-        // 重置分類切換按鈕狀態
-        function resetCategoryToggle() {
-            isAddingNewCategory = false;
-            categorySelect.classList.remove('hidden');
-            categoryNewInput.classList.add('hidden');
-            toggleCategoryBtn.textContent = '+ 新分類';
-            toggleCategoryBtn.classList.remove('bg-indigo-100', 'text-indigo-700');
-            toggleCategoryBtn.classList.add('bg-gray-100', 'text-gray-600');
-            categoryNewInput.value = '';
-        }
-
-        // 切換現有分類/新分類輸入框
-        toggleCategoryBtn.addEventListener('click', () => {
-            isAddingNewCategory = !isAddingNewCategory;
-            if (isAddingNewCategory) {
-                categorySelect.classList.add('hidden');
-                categoryNewInput.classList.remove('hidden');
-                toggleCategoryBtn.textContent = '取消新增';
-                toggleCategoryBtn.classList.remove('bg-gray-100', 'text-gray-600');
-                toggleCategoryBtn.classList.add('bg-indigo-100', 'text-indigo-700');
-                categoryNewInput.focus();
-            } else {
-                resetCategoryToggle();
-            }
-        });
-
         function closeModal() {
             addModal.classList.add('opacity-0');
             modalContent.classList.remove('scale-100');
@@ -363,7 +409,6 @@
             setTimeout(() => {
                 addModal.classList.add('hidden');
                 addLinkForm.reset();
-                resetCategoryToggle();
                 currentEditId = null; // 關閉時清空編輯 ID
                 errorMessage.classList.add('hidden');
             }, 300);
@@ -405,7 +450,7 @@
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('cursor-not-allowed');
                 loadData();
-                checkAndMigrateOldData(); // 登入成功後自動檢查並轉移舊資料
+                checkAndMigrateOldData();
             } else {
                 currentUser = null;
             }
@@ -422,14 +467,14 @@
                 const snap = await getDocs(personalRef);
                 
                 if (!snap.empty) {
-                    console.log("偵測到舊有個人資料，正在自動轉移至公開空間...");
                     authStatus.innerHTML = `<span class="text-orange-500 font-medium">自動匯入舊資料中...</span>`;
                     
-                    // 將每一筆舊資料複製到新的共用空間，並刪除舊的
                     snap.forEach(async (documentSnapshot) => {
                         const data = documentSnapshot.data();
+                        // 確保匯入時也是陣列格式
+                        const normalizedCat = normalizeCategories(data.category);
                         await addDoc(publicRef, {
-                            category: data.category || '未分類',
+                            category: normalizedCat,
                             title: data.title,
                             url: data.url,
                             createdAt: data.createdAt || serverTimestamp()
@@ -458,7 +503,6 @@
             loadingIndicator.classList.remove('hidden');
             emptyState.classList.add('hidden');
 
-            // 改為指向公開共用的資料夾，讓所有裝置都能讀取同一個資料庫
             const collectionRef = collection(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks');
 
             unsubscribeSnapshot = onSnapshot(collectionRef, (snapshot) => {
@@ -483,31 +527,38 @@
             categoriesContainer.innerHTML = '';
             categoryFilters.innerHTML = '';
             
+            // 由於一個書籤可能有兩個標籤，我們計算獨立的書籤總數
             if (globalBookmarks.length > 0) {
                 linkCount.textContent = globalBookmarks.length;
                 linkCount.classList.remove('hidden');
             } else {
                 linkCount.classList.add('hidden');
                 emptyState.classList.remove('hidden');
-                categorySelect.innerHTML = '<option value="未分類">未分類</option>';
                 return;
             }
             
             emptyState.classList.add('hidden');
 
+            // 結構改變：從 { category: [bookmarks...] } 
+            // 變成允許一個書籤出現在多個 category 的陣列中
             const groupedBookmarks = {};
             const categoriesSet = new Set();
 
             globalBookmarks.forEach((bookmark) => {
-                const category = bookmark.category || '未分類';
-                categoriesSet.add(category);
+                // 將資料庫的分類轉為標準陣列
+                const categoriesArray = normalizeCategories(bookmark.category);
                 
-                if (!groupedBookmarks[category]) {
-                    groupedBookmarks[category] = [];
-                }
-                groupedBookmarks[category].push(bookmark);
+                categoriesArray.forEach(cat => {
+                    categoriesSet.add(cat);
+                    if (!groupedBookmarks[cat]) {
+                        groupedBookmarks[cat] = [];
+                    }
+                    // 將這個書籤推入該分類
+                    groupedBookmarks[cat].push(bookmark);
+                });
             });
 
+            // 排序分類 (將 '未分類' 放到最後，其他按字母排)
             const sortedCategories = Array.from(categoriesSet).sort((a, b) => {
                 if (a === '未分類') return 1;
                 if (b === '未分類') return -1;
@@ -529,22 +580,6 @@
                 categoryFilters.appendChild(btn);
             });
 
-            // 更新新增表單的下拉選單
-            const currentSelectValue = categorySelect.value;
-            categorySelect.innerHTML = '';
-            sortedCategories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                categorySelect.appendChild(option);
-            });
-            
-            if (sortedCategories.includes(currentSelectValue)) {
-                categorySelect.value = currentSelectValue;
-            } else if (activeCategoryFilter !== '全部' && sortedCategories.includes(activeCategoryFilter)) {
-                categorySelect.value = activeCategoryFilter;
-            }
-
             // 渲染書籤卡片
             const categoriesToRender = activeCategoryFilter === '全部' ? sortedCategories : [activeCategoryFilter];
 
@@ -553,6 +588,7 @@
                 
                 const bookmarks = groupedBookmarks[category];
                 
+                // 按時間排序 (新的在前面)
                 bookmarks.sort((a, b) => {
                     const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
                     const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
@@ -585,6 +621,10 @@
 
                     const initial = bookmark.title ? bookmark.title.charAt(0).toUpperCase() : '?';
                     const colorClass = getIconColor(bookmark.title || '?');
+                    
+                    // 取得這個書籤所有的標籤
+                    const tags = normalizeCategories(bookmark.category);
+                    const tagsHtml = tags.map(t => `<span class="tag-pill">${escapeHTML(t)}</span>`).join('');
 
                     card.innerHTML = `
                         <div class="flex items-center gap-4 overflow-hidden">
@@ -592,7 +632,11 @@
                                 ${initial}
                             </div>
                             <div class="overflow-hidden">
-                                <h3 class="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">${escapeHTML(bookmark.title)}</h3>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">${escapeHTML(bookmark.title)}</h3>
+                                    <!-- 顯示多重標籤 -->
+                                    <div class="hidden sm:flex gap-1">${tagsHtml}</div>
+                                </div>
                                 <p class="text-xs text-gray-500 truncate mt-0.5">${escapeHTML(domain)}</p>
                             </div>
                         </div>
@@ -640,9 +684,14 @@
 
             errorMessage.classList.add('hidden');
             
-            const category = isAddingNewCategory 
-                ? (categoryNewInput.value.trim() || '未分類') 
-                : categorySelect.value;
+            // 確保如果使用者在輸入框打字但忘記按加入，也自動幫他加進去
+            const pendingTag = tagInput.value.trim();
+            if (pendingTag && !currentModalTags.includes(pendingTag)) {
+                currentModalTags.push(pendingTag);
+            }
+
+            // 準備最終送出的陣列
+            const categoryArray = currentModalTags.length > 0 ? [...currentModalTags] : ['未分類'];
                 
             const title = linkTitleInput.value.trim();
             let url = linkUrlInput.value.trim();
@@ -658,19 +707,19 @@
 
             try {
                 if (currentEditId) {
-                    // 更新現有資料模式 (改為公開路徑)
+                    // 更新現有資料模式 (公開路徑)，儲存為陣列
                     const docRef = doc(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks', currentEditId);
                     await updateDoc(docRef, {
-                        category: category,
+                        category: categoryArray,
                         title: title,
                         url: url,
-                        updatedAt: serverTimestamp() // 記錄最後更新時間
+                        updatedAt: serverTimestamp()
                     });
                 } else {
-                    // 新增資料模式 (改為公開路徑)
+                    // 新增資料模式 (公開路徑)，儲存為陣列
                     const collectionRef = collection(db, 'artifacts', systemAppId, 'public', 'data', 'bookmarks');
                     await addDoc(collectionRef, {
-                        category: category,
+                        category: categoryArray,
                         title: title,
                         url: url,
                         createdAt: serverTimestamp()
@@ -679,9 +728,9 @@
                 
                 closeModal();
                 
-                // UX優化：如果操作的分類與目前過濾的分類不同，自動跳轉過去
-                if (activeCategoryFilter !== '全部' && activeCategoryFilter !== category) {
-                    activeCategoryFilter = category;
+                // 如果有包含目前篩選的分類，就不切換；如果沒有，跳到第一個標籤
+                if (activeCategoryFilter !== '全部' && !categoryArray.includes(activeCategoryFilter)) {
+                    activeCategoryFilter = categoryArray[0];
                     renderUI();
                 }
 
@@ -721,7 +770,7 @@
             );
         }
 
-        // PWA Service Worker (略... 已在上方設定)
+        // PWA Service Worker
         let deferredPrompt;
         const installBtn = document.getElementById('install-pwa-btn');
 

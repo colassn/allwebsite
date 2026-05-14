@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時昌迷你倉 Reels 創作者工作台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Lucide 圖標庫 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- 頂部標題 -->
+    <div class="max-w-5xl mx-auto mb-8 bg-gradient-to-r from-blue-900 to-indigo-800 rounded-2xl p-8 text-white shadow-xl">
+        <h1 class="text-2xl md:text-3xl font-bold mb-2">🎬 時昌迷你倉 Reels 創作者工作台</h1>
+        <p class="text-blue-100 opacity-90">無臉影片專用 • 即時修改腳本文案 • 學生適用</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+        <!-- 導航列 -->
+        <div class="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-xl shadow-sm border border-slate-200" id="tab-buttons">
+            <button onclick="switchTab('ideas')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-blue-500 text-white shadow-md" data-target="ideas">
+                <i data-lucide="lightbulb" class="w-4 h-4"></i> 企劃庫
+            </button>
+            <button onclick="switchTab('editor')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="editor">
+                <i data-lucide="pen-tool" class="w-4 h-4"></i> 即時編輯
+            </button>
+            <button onclick="switchTab('tutorial')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="tutorial">
+                <i data-lucide="video" class="w-4 h-4"></i> 拍攝教學
+            </button>
+            <button onclick="switchTab('rules')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-rose-50 hover:text-rose-600" data-target="rules">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i> 官方守則
+            </button>
+        </div>
+
+        <!-- 內容區塊: 企劃庫 -->
+        <div id="ideas" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="ideas-container">
+                <!-- 企劃卡片將由 JS 動態生成 -->
+            </div>
+        </div>
+
+        <!-- 內容區塊: 編輯器 -->
+        <div id="editor" class="tab-content">
+            <div id="editor-empty" class="text-center py-20 text-slate-400">
+                <i data-lucide="lightbulb" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                <p>請先喺「💡 企劃庫」選擇一個影片橋段</p>
+            </div>
+
+            <div id="editor-active" class="hidden space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-4 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="clapperboard" class="w-5 h-5 text-blue-500"></i>
+                            正在編輯：<span id="editing-title"></span>
+                        </h2>
+                        <span id="editing-direction" class="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded-md"></span>
+                    </div>
+                    
+                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- 左側：分鏡腳本編輯 -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="block text-sm font-bold text-slate-700">影片畫面及字幕 (Script)</label>
+                                <button onclick="copyText('script-textarea', 'script-copy-btn')" id="script-copy-btn" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span>複製腳本</span>
+                                </button>
+                            </div>
+                            <textarea id="script-textarea" class="w-full h-48 p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"></textarea>
+                            <div class="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800 border border-blue-100">
+                                <strong>💡 提示：</strong> 建議長度控制在 7-15 秒。確保有清楚打出「81777778」及優惠字眼。
+                            </div>
+                        </div>
+
+                        <!-- 右側：發佈貼文編輯 -->
+                        <div>
+                            <div class="flex justify-between items-end mb-2">
+                                <label class="block text-sm font-bold text-slate-700">發佈標題及內文 (Caption)</label>
+                                <button onclick="copyText('caption-textarea', 'caption-copy-btn')" id="caption-copy-btn" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span>複製全文</span>
+                                </button>
+                            </div>
+                            <textarea id="caption-textarea" class="w-full h-48 p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"></textarea>
+                            <div class="mt-3 text-xs text-slate-500">
+                                ✅ 已包含官方指定格式及 Hashtags
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 內容區塊: 拍攝教學 -->
+        <div id="tutorial" class="tab-content">
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="smartphone" class="w-5 h-5 text-indigo-500"></i> 第一人稱 (POV) 拍攝技巧
+                    </h3>
+                    <ul class="space-y-3 text-sm text-slate-600">
+                        <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 bg-indigo-500 rounded-full mt-1.5"></div> 把手機放在胸口或下巴高度，模擬人眼真實視角。</li>
+                        <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 bg-indigo-500 rounded-full mt-1.5"></div> 手臂夾緊身體邊緣拍攝，即使沒有雲台 (Gimbal) 也能保持基本穩定。</li>
+                        <li class="flex items-start gap-2"><div class="w-1.5 h-1.5 bg-indigo-500 rounded-full mt-1.5"></div> 動作要慢，觀眾睇 Reels 耐性極低，太晃動會馬上被掃走。</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="video" class="w-5 h-5 text-pink-500"></i> CapCut 毛玻璃 (Glassmorphism) 特效教學
+                    </h3>
+                    <ol class="list-decimal pl-5 space-y-3 text-sm text-slate-600">
+                        <li>導入你的背景影片 (例如凌亂嘅書枱)。</li>
+                        <li>點擊「新增畫中畫 (Overlay)」，加入一張純白色嘅圖片。</li>
+                        <li>將圖片調整成正方形或長方形，擺喺畫面正中間。</li>
+                        <li>選擇白色圖片，點選「混合模式 (Blend)」-> 調低「不透明度 (Opacity)」至 30-40%。</li>
+                        <li>去「特效 (Effects)」->「影片特效」-> 搜尋「模糊 (Blur)」，套用喺白色圖片上。</li>
+                        <li>最後喺上面加入文字「81777778」，就會有極高質嘅 UI 質感！</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- 內容區塊: 官方守則 -->
+        <div id="rules" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-emerald-50 p-6 rounded-xl border border-emerald-200">
+                    <h3 class="text-lg font-bold text-emerald-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i> 必須包含 (Must Include)
+                    </h3>
+                    <ul class="space-y-3 text-sm text-emerald-700">
+                        <li>✅ 清楚提及品牌：<strong>時昌迷你倉</strong></li>
+                        <li>✅ 清楚提及經典號碼：<strong>8177 7778</strong></li>
+                        <li>✅ 帶出優惠 (3選1)：
+                            <ul class="pl-5 list-disc mt-1 text-xs">
+                                <li>首月租倉只係 HK$10</li>
+                                <li>經網上入倉，即享七折</li>
+                                <li>新入倉，送運輸！</li>
+                            </ul>
+                        </li>
+                        <li>✅ 至少帶出一個使用原因 (屋企亂、搬屋、網店等)</li>
+                        <li>✅ 設定為「公開」嘅 Instagram Reel</li>
+                    </ul>
+                </div>
+
+                <div class="bg-rose-50 p-6 rounded-xl border border-rose-200">
+                    <h3 class="text-lg font-bold text-rose-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="x-circle" class="w-5 h-5"></i> 絕對不可 (Do Not Include)
+                    </h3>
+                    <ul class="space-y-3 text-sm text-rose-700">
+                        <li>🚫 講「全港最平」、「一定最安全」等絕對聲稱</li>
+                        <li>🚫 拍攝危險行為 (阻塞通道、攀爬、玩火)</li>
+                        <li>🚫 暗示存放違禁品 (易燃物、活體、現金等)</li>
+                        <li>🚫 貶低其他迷你倉品牌</li>
+                        <li>🚫 買 Views、Likes 或落 Ads (必須 Organic)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化 Lucide 圖標
+        lucide.createIcons();
+
+        const hashtags = "\n\n#時昌迷你倉 #81777778 #首月租倉10蚊 #香港迷你倉 #香港集體回憶 #香港廣告 #香港生活 #收納整理 #迷你倉 #KoLink #ViewsEqualsMoney";
+
+        // 10 個影片企劃資料
+        const ideasData = [
+            {
+                id: 1, title: "手機鍵盤的肌肉記憶", direction: "A：集體記憶",
+                visual: "螢幕錄影手機打字介面。輸入「屋企好亂」，候選字自動彈出「81777778」。",
+                scriptTemplate: "[畫面 0-3秒] 螢幕錄影：打開 WhatsApp 朋友問「屋企好多雜物點算」\n[畫面 3-6秒] 鍵盤打字，自動選字區彈出「81777778」\n[畫面 6-10秒] 彈出 Glassmorphism 特效字：「需要迷你倉？81777778」\n[結尾] 語音/字幕：而家首月租倉，只係 HK$10！",
+                captionTemplate: "香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？今次用自己方式重拍呢個經典記憶點。需要迷你倉嘅話，而家首月租倉只係 HK$10。"
+            },
+            {
+                id: 2, title: "IG 搜尋器排行榜", direction: "A：集體記憶",
+                visual: "用毛玻璃風格設計卡片，標題「香港最洗腦廣告」。翻開第一名只有一串數字：81777778。",
+                scriptTemplate: "[畫面 0-3秒] 手機全螢幕，一張靚靚 UI 卡片寫住「香港洗腦廣告排行榜」\n[畫面 3-8秒] 卡片滑開，第一名揭曉：81777778\n[畫面 8-12秒] 字幕：以前覺得洗腦，依家大個先知真係有需要\n[結尾] 經網上入倉，即享七折！",
+                captionTemplate: "香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？今次用自己方式重拍呢個經典記憶點。需要迷你倉嘅話，經網上入倉，即享七折！"
+            },
+            {
+                id: 3, title: "Siri 都有代溝？", direction: "A：集體記憶",
+                visual: "對住枱面部電話(POV)，呼叫 Siri。Siri 介面轉動並回應。",
+                scriptTemplate: "[畫面 0-4秒] POV 視角望住枱面部 iPhone，用語音問：「Siri，我想租迷你倉」\n[畫面 4-9秒] Siri 動畫轉動，彈出語音：「為你尋找 81777778」\n[畫面 9-12秒] 字幕：時昌迷你倉，香港人嘅集體記憶\n[結尾] 新入倉，送運輸！",
+                captionTemplate: "香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？連 Siri 都識答！需要迷你倉嘅話，而家新入倉，送運輸！"
+            },
+            {
+                id: 4, title: "書枱的「末日」POV", direction: "B：生活痛點",
+                visual: "第一人稱視角，望住自己張書枱堆滿書本、電腦配件，完全無位做嘢。",
+                scriptTemplate: "[畫面 0-4秒] 搖晃鏡頭拍攝張超級亂、冇位放電腦嘅書枱\n[畫面 4-8秒] 嘆氣聲，字幕：「我終於明白，點解香港人需要迷你倉」\n[畫面 8-12秒] 啪一聲手指 (Snap)，雜物消失，枱面變乾淨\n[結尾] 字幕：拯救書枱，時昌迷你倉 81777778。而家首月租倉，只係 HK$10！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。屋企唔係唔夠整理，係真係唔夠位。書枱變雜物房點算好？時昌迷你倉 81777778，而家首月租倉只係 HK$10。"
+            },
+            {
+                id: 5, title: "模型收藏家的哀歌", direction: "B：生活痛點",
+                visual: "微距拍攝精美的動漫模型或波鞋，背景是擠迫的床底或紙箱。",
+                scriptTemplate: "[畫面 0-5秒] 用電影感微距特寫靚靚 Figure / 波鞋\n[畫面 5-8秒] 鏡頭突然拉遠，原來堆喺好迫嘅床底，字幕：「收藏品冇錯，冇位放先係問題」\n[畫面 8-12秒] 畫面打出時昌 Logo 及 81777778\n[結尾] 拯救收藏品，經網上入倉，即享七折！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。買玩具/波鞋冇錯，錯在間房冇位放！時昌迷你倉 81777778，經網上入倉，即享七折！"
+            },
+            {
+                id: 6, title: "$10 的價值觀挑戰", direction: "B：生活痛點",
+                visual: "快剪 $10 買到的東西（一包紙巾、一支飲品），最後顯示迷你倉首月租金。",
+                scriptTemplate: "[畫面 0-2秒] 手持 $10 蚊銀仔\n[畫面 2-6秒] 快閃：一包紙巾、一支水... \n[畫面 6-10秒] 字幕：但原來 $10 可以拯救你間房！時昌迷你倉 81777778\n[結尾] 首月租倉，只係 HK$10！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。原來而家 $10 蚊除咗買包紙巾，仲可以租到個倉！時昌迷你倉 81777778，而家首月租倉只係 HK$10。"
+            },
+            {
+                id: 7, title: "阿媽嘅怒吼文字動畫", direction: "B：生活痛點",
+                visual: "黑畫面，不斷彈出 WhatsApp 語音訊息嘅 UI 氣泡（唔出聲，只出字幕）。",
+                scriptTemplate: "[畫面 0-4秒] 畫面彈出對話框：「你啲嘢幾時掉？」「成屋都係你啲嘢！」\n[畫面 4-8秒] 畫面狠狠打出大字：「當張櫈開始唔係用嚟坐，而係用嚟放衫…」\n[畫面 8-12秒] 字幕：免卻家庭糾紛，時昌迷你倉 81777778\n[結尾] 新入倉，送運輸！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。為咗避免每日比阿媽鬧，最直接嘅解決方法就係租倉！時昌迷你倉 81777778，新入倉，送運輸！"
+            },
+            {
+                id: 8, title: "換季 ASMR 治癒收納", direction: "B：生活痛點",
+                visual: "手部特寫，將冬裝放入真空袋，然後用吸塵機抽氣嘅畫面。強調 ASMR。",
+                scriptTemplate: "[畫面 0-6秒] 無背景音樂，只有清晰嘅執衫、拉拉鏈、抽氣 ASMR 聲音\n[畫面 6-9秒] 真空袋變扁，但打出字幕：「抽得幾薄都好，始終都係霸住間房」\n[畫面 9-12秒] 時昌迷你倉 81777778\n[結尾] 轉季必備，首月租倉，只係 HK$10！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。換季啲厚衫點抽真空都係咁阻埞。時昌迷你倉 81777778，而家首月租倉只係 HK$10。"
+            },
+            {
+                id: 9, title: "搬屋地獄縮時攝影", direction: "B：生活痛點",
+                visual: "縮時攝影 (Timelapse) 將屋企雜物入箱嘅過程，紙箱越疊越高。",
+                scriptTemplate: "[畫面 0-5秒] 快速播放 (Timelapse) 將書本雜物入紙箱嘅畫面\n[畫面 5-8秒] 紙箱堆到成座山咁高，配上嘆氣音效\n[畫面 8-12秒] 搬屋過渡期救星？時昌迷你倉 81777778\n[結尾] 新入倉，送運輸！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。搬屋最需要嘅，除咗紙箱，就係迷你倉。時昌迷你倉 81777778，新入倉，送運輸！"
+            },
+            {
+                id: 10, title: "網店老闆崩潰日常", direction: "B：生活痛點",
+                visual: "第一人稱走路視角。一開房門，成地都係順豐紙箱、存貨，行路都要避。",
+                scriptTemplate: "[畫面 0-4秒] 開房門，影住地下全部都係貨同包裝物料\n[畫面 4-8秒] 字幕：「小生意做大咗，屋企唔夠擺點算？」\n[畫面 8-12秒] 畫面打出時昌 Logo 及 81777778\n[結尾] 經網上入倉，即享七折！",
+                captionTemplate: "我終於明白點解香港人需要迷你倉。做網店賺到錢，但間房連行路嘅位都冇？時昌迷你倉 81777778，經網上入倉，即享七折！"
+            }
+        ];
+
+        // 渲染企劃卡片
+        function renderIdeas() {
+            const container = document.getElementById('ideas-container');
+            let html = '';
+            
+            ideasData.forEach(idea => {
+                html += `
+                <div onclick="selectIdea(${idea.id})" class="cursor-pointer glass-card hover:bg-white transition-all duration-300 rounded-xl p-5 shadow-sm hover:shadow-md group">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded-md">${idea.direction}</span>
+                        <span class="text-slate-400 group-hover:text-blue-500"><i data-lucide="edit-3" class="w-4 h-4"></i></span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">${idea.title}</h3>
+                    <p class="text-sm text-slate-600 line-clamp-2"><strong>畫面：</strong>${idea.visual}</p>
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            lucide.createIcons(); // 重新渲染新加入的圖標
+        }
+
+        // 切換分頁
+        function switchTab(tabId) {
+            // 隱藏所有內容
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // 顯示目標內容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 更新按鈕樣式
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if(btn.dataset.target === tabId) {
+                    btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-blue-500 text-white shadow-md";
+                } else {
+                    if(btn.dataset.target === 'rules'){
+                         btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-rose-50 hover:text-rose-600";
+                    }else{
+                        btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100";
+                    }
+                }
+            });
+        }
+
+k       // 選擇企劃進入編輯器
+        function selectIdea(id) {
+            const idea = ideasData.find(i => i.id === id);
+            
+            // 隱藏空狀態，顯示編輯器
+            document.getElementById('editor-empty').classList.add('hidden');
+            document.getElementById('editor-active').classList.remove('hidden');
+            
+            // 填入資料
+            document.getElementById('editing-title').innerText = idea.title;
+            document.getElementById('editing-direction').innerText = idea.direction;
+            document.getElementById('script-textarea').value = idea.scriptTemplate;
+            document.getElementById('caption-textarea').value = idea.captionTemplate + hashtags;
+            
+            // 切換到編輯器分頁
+            switchTab('editor');
+        }
+
+        // 複製文字功能
+        function copyText(textareaId, btnId) {
+            const text = document.getElementById(textareaId).value;
+            const btn = document.getElementById(btnId);
+            const originalHTML = btn.innerHTML;
+            
+            // 使用較兼容的方法複製
+            const textAreaElement = document.createElement("textarea");
+            textAreaElement.value = text;
+            document.body.appendChild(textAreaElement);
+            textAreaElement.select();
+            try {
+                document.execCommand('copy');
+                // 成功提示
+                btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>已複製!</span>`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    lucide.createIcons();
+                }, 2000);
+            } catch (err) {
+                console.error('複製失敗', err);
+                alert("複製失敗，請手動全選複製。");
+            }
+            document.body.removeChild(textAreaElement);
+        }
+
+        // 頁面載入時初始化
+        window.onload = () => {
+            renderIdeas();
+        };
+    </script>
+</body>
+</html>

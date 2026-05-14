@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>時昌迷你倉 Reels 創作者工作台</title>
+    <title>時昌迷你倉 Campaign 製作導航站</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Lucide 圖標庫 -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
             font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
         }
         .tab-content {
             display: none;
@@ -23,277 +22,249 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
+        /* 自定義 Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8 text-slate-800">
 
-    <!-- 頂部標題 -->
-    <div class="max-w-5xl mx-auto mb-8 bg-gradient-to-r from-blue-900 to-indigo-800 rounded-2xl p-8 text-white shadow-xl">
-        <h1 class="text-2xl md:text-3xl font-bold mb-2">🎬 時昌迷你倉 Reels 創作者工作台</h1>
-        <p class="text-blue-100 opacity-90">無臉影片專用 • 即時修改腳本文案 • 學生適用</p>
+    <!-- 頂部 Header -->
+    <div class="max-w-5xl mx-auto mb-8 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10">
+            <span class="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-bold tracking-wider mb-3">KOLINK 專屬企劃</span>
+            <h1 class="text-3xl md:text-4xl font-bold mb-3">🎬 時昌迷你倉 Campaign 製作導航</h1>
+            <p class="text-blue-100 text-lg opacity-90 max-w-2xl">將 Campaign Brief 化繁為簡。根據官方兩大方向，一鍵生成你的無臉 Reel 腳本、分鏡與專屬 Caption。</p>
+        </div>
+        <!-- 裝飾背景圖形 -->
+        <i data-lucide="clapperboard" class="absolute -right-10 -bottom-10 w-64 h-64 text-white opacity-10 rotate-12 z-0"></i>
     </div>
 
     <div class="max-w-5xl mx-auto">
         <!-- 導航列 -->
         <div class="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-xl shadow-sm border border-slate-200" id="tab-buttons">
-            <button onclick="switchTab('ai')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-indigo-500 text-white shadow-md" data-target="ai">
-                <i data-lucide="bot" class="w-4 h-4"></i> AI 幫我諗
+            <button onclick="switchTab('brief')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-blue-600 text-white shadow-md" data-target="brief">
+                <i data-lucide="file-text" class="w-4 h-4"></i> 企劃拆解
             </button>
-            <button onclick="switchTab('ideas')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="ideas">
-                <i data-lucide="lightbulb" class="w-4 h-4"></i> 企劃庫
+            <button onclick="switchTab('builder')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="builder">
+                <i data-lucide="hammer" class="w-4 h-4"></i> 互動腳本生成器
             </button>
-            <button onclick="switchTab('editor')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="editor">
-                <i data-lucide="pen-tool" class="w-4 h-4"></i> 即時編輯
-            </button>
-            <button onclick="switchTab('tutorial')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="tutorial">
-                <i data-lucide="video" class="w-4 h-4"></i> 拍攝教學
+            <button onclick="switchTab('production')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100" data-target="production">
+                <i data-lucide="video" class="w-4 h-4"></i> 無臉拍攝教學
             </button>
             <button onclick="switchTab('rules')" class="tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-rose-50 hover:text-rose-600" data-target="rules">
-                <i data-lucide="alert-triangle" class="w-4 h-4"></i> 官方守則
+                <i data-lucide="shield-check" class="w-4 h-4"></i> 發佈前 Checklist
             </button>
         </div>
 
-        <!-- 內容區塊: AI 助手與教學 -->
-        <div id="ai" class="tab-content active">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- 左側：爆款結構視覺化教學 -->
-                <div class="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-xl border border-indigo-100 h-full">
-                    <h3 class="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
-                        <i data-lucide="book-open" class="w-6 h-6 text-indigo-600"></i> 爆款 3 步曲公式
-                    </h3>
-                    <p class="text-sm text-indigo-700 mb-6">一條成功嘅 Reels，一定要具備呢個「黃金三角」結構：</p>
-
-                    <div class="space-y-4 relative">
-                        <!-- Step 1 -->
-                        <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-rose-400 relative z-10">
-                            <h4 class="font-bold text-rose-700 text-sm mb-1">1. 影片開頭 (Hook) = 標題 / 封面</h4>
-                            <p class="text-xs text-slate-600"><strong>目的：</strong>頭 3 秒留住觀眾，唔好俾佢掃走。<br><strong>做法：</strong>講出極大痛點 (例如「間房亂到阿媽想趕我走」) 或者極端對比 (「香港 $10 買到咩」)。</p>
-                        </div>
-                        <!-- Step 2 -->
-                        <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-400 relative z-10">
-                            <h4 class="font-bold text-blue-700 text-sm mb-1">2. 影片中段 (Body) = 內容 + 官方規則</h4>
-                            <p class="text-xs text-slate-600"><strong>目的：</strong>自然帶出時昌迷你倉解決問題。<br><strong>做法：</strong>啪一聲轉場，畫面變乾淨。大字彈出「81777778」同埋優惠「首月 HK$10」。</p>
-                        </div>
-                        <!-- Step 3 -->
-                        <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-emerald-400 relative z-10">
-                            <h4 class="font-bold text-emerald-700 text-sm mb-1">3. 發佈內文 (Caption) = 補充 + 呼籲</h4>
-                            <p class="text-xs text-slate-600"><strong>目的：</strong>滿足官方要求，引導觀眾留言互動。<br><strong>做法：</strong>講述自己真實感受，最底必須加齊官方指定 Hashtags。</p>
-                        </div>
-                        <!-- 裝飾線 -->
-                        <div class="absolute left-4 top-4 bottom-4 w-0.5 bg-indigo-200 z-0"></div>
-                    </div>
-                </div>
-
-                <!-- 右側：AI 幫我諗 -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full flex flex-col">
-                    <h3 class="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-                        <i data-lucide="bot" class="w-6 h-6 text-indigo-500"></i> AI 腳本生成器
-                    </h3>
-                    <p class="text-sm text-slate-600 mb-4">諗唔到拍咩？點擊下面標籤，或者輸入你想拍嘅痛點，等 AI 幫你寫：</p>
-
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        <button onclick="fillAiInput('大學生宿舍爆倉')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-full transition-colors">🎓 大學生宿舍</button>
-                        <button onclick="fillAiInput('狂買網購無位放')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-full transition-colors">📦 狂買網購</button>
-                        <button onclick="fillAiInput('阿媽逼我掉玩具')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-full transition-colors">🧸 阿媽逼掉玩具</button>
-                    </div>
-
-                    <div class="flex gap-2 mb-6">
-                        <input type="text" id="ai-input" placeholder="例如：我係化妝師，太多化妝品..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button onclick="generateAI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 whitespace-nowrap">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i> 幫我諗
-                        </button>
-                    </div>
-
-                    <!-- 生成結果 -->
-                    <div id="ai-loading" class="hidden text-center py-8 my-auto">
-                        <i data-lucide="loader-2" class="w-8 h-8 text-indigo-500 animate-spin mx-auto mb-2"></i>
-                        <p class="text-sm text-slate-500">AI 正在為你度身訂造爆款腳本...</p>
-                    </div>
-
-                    <div id="ai-result" class="hidden flex-1 flex-col">
-                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4 flex-1">
-                            <!-- JS 動態插入內容 -->
-                        </div>
-                        <button onclick="copyAiResult()" class="w-full mt-4 bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-lg text-sm font-bold transition-colors shadow-md">
-                            <i data-lucide="arrow-right-circle" class="w-4 h-4 inline-block mr-1"></i> 採用此腳本並進入編輯器
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 內容區塊: 企劃庫 -->
-        <div id="ideas" class="tab-content">
-                    </h3>
-                    <ol class="list-decimal pl-5 space-y-3 text-sm text-slate-600">
-                        <li>導入你的背景影片 (例如凌亂嘅書枱)。</li>
-                        <li>點擊「新增畫中畫 (Overlay)」，加入一張純白色嘅圖片。</li>
-                        <li>將圖片調整成正方形或長方形，擺喺畫面正中間。</li>
-                        <li>選擇白色圖片，點選「混合模式 (Blend)」-> 調低「不透明度 (Opacity)」至 30-40%。</li>
-                        <li>去「特效 (Effects)」->「影片特效」-> 搜尋「模糊 (Blur)」，套用喺白色圖片上。</li>
-                        <li>最後喺上面加入文字「81777778」，就會有極高質嘅 UI 質感！</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-
-        <!-- 內容區塊: 官方守則 -->
-        <div id="rules" class="tab-content">
+        <!-- 1. 企劃拆解 (Brief Breakdown) -->
+        <div id="brief" class="tab-content active space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-emerald-50 p-6 rounded-xl border border-emerald-200">
-                    <h3 class="text-lg font-bold text-emerald-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="check-circle-2" class="w-5 h-5"></i> 必須包含 (Must Include)
-                    </h3>
-                    <ul class="space-y-3 text-sm text-emerald-700">
-                        <li>✅ 清楚提及品牌：<strong>時昌迷你倉</strong></li>
-                        <li>✅ 清楚提及經典號碼：<strong>8177 7778</strong></li>
-                        <li>✅ 帶出優惠 (3選1)：
-                            <ul class="pl-5 list-disc mt-1 text-xs">
-                                <li>首月租倉只係 HK$10</li>
-                                <li>經網上入倉，即享七折</li>
-                                <li>新入倉，送運輸！</li>
-                            </ul>
-                        </li>
-                        <li>✅ 至少帶出一個使用原因 (屋企亂、搬屋、網店等)</li>
-                        <li>✅ 設定為「公開」嘅 Instagram Reel</li>
+                <!-- 方向 A -->
+                <div class="bg-white rounded-xl shadow-sm border-t-4 border-t-indigo-500 border-x border-b border-slate-200 p-6">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-indigo-600 font-bold text-xl">A</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">香港集體記憶</h3>
+                    <p class="text-sm text-slate-600 mb-4">用新一代社交媒體語言，重新演繹「81777778」呢個經典記憶點。將以前嘅廣告變成今日 IG Reels 上可以被分享、被模仿嘅內容。</p>
+                    <div class="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 space-y-2">
+                        <p><strong>適合拍法：</strong> 搞笑對比、手機自動選字POV、Siri對話、洗腦音樂 Remix。</p>
+                        <p><strong>官方 Caption 模板：</strong>「香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778...」</p>
+                    </div>
+                </div>
+
+                <!-- 方向 B -->
+                <div class="bg-white rounded-xl shadow-sm border-t-4 border-t-emerald-500 border-x border-b border-slate-200 p-6">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-emerald-600 font-bold text-xl">B</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">生活痛點出發</h3>
+                    <p class="text-sm text-slate-600 mb-4">講點解你需要迷你倉。由真實生活痛點出發，自然帶出：如果需要解決呢啲麻煩，就會諗起時昌 81777778。</p>
+                    <div class="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 space-y-2">
+                        <p><strong>適合拍法：</strong> 屋企爆倉視角、執嘢 ASMR、收藏品無位放、網店紙箱堆滿屋。</p>
+                        <p><strong>官方 Caption 模板：</strong>「我終於明白點解香港人需要迷你倉...」</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                <h3 class="font-bold text-amber-800 mb-3 flex items-center gap-2"><i data-lucide="gift" class="w-5 h-5"></i> 必須包含嘅優惠 (3選1)</h3>
+                <div class="flex flex-wrap gap-3">
+                    <span class="bg-white px-4 py-2 rounded-full border border-amber-300 text-amber-700 text-sm font-bold shadow-sm">💰 首月租倉 HK$10</span>
+                    <span class="bg-white px-4 py-2 rounded-full border border-amber-300 text-amber-700 text-sm font-bold shadow-sm">💻 網上入倉 7 折</span>
+                    <span class="bg-white px-4 py-2 rounded-full border border-amber-300 text-amber-700 text-sm font-bold shadow-sm">🚚 新入倉送運輸</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 互動腳本生成器 (Script Builder) -->
+        <div id="builder" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i data-lucide="bot" class="w-6 h-6 text-blue-600"></i> 1 分鐘生成符合 Brief 的影片腳本
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Step 1 -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">1. 選擇影片大方向</label>
+                        <select id="select-direction" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="A">方向 A：香港集體記憶 (81777778洗腦)</option>
+                            <option value="B">方向 B：生活痛點出發 (點解需要倉)</option>
+                        </select>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">2. 選擇使用場景 (必填)</label>
+                        <select id="select-reason" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="屋企太多雜物">屋企太多雜物</option>
+                            <option value="搬屋暫存">搬屋暫存 / 新屋未Ready</option>
+                            <option value="裝修避難">屋企裝修</option>
+                            <option value="收藏品無位放">收藏品 (模型/波鞋) 無位放</option>
+                            <option value="轉季衣物">轉季衣物 / 季節用品</option>
+                            <option value="小生意貨品">網店 / 小生意貨品堆滿屋</option>
+                        </select>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">3. 選擇推廣優惠 (必填)</label>
+                        <select id="select-offer" class="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="而家首月租倉，只係 HK$10">首月租倉，只係 HK$10</option>
+                            <option value="經網上入倉，即享七折">網上入倉，即享七折</option>
+                            <option value="新入倉，送運輸!">新入倉，送運輸!</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="generateScript()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-colors text-lg flex justify-center items-center gap-2">
+                    <i data-lucide="zap" class="w-5 h-5"></i> 立即生成專屬腳本與內文
+                </button>
+
+                <!-- 生成結果區 -->
+                <div id="script-result" class="hidden mt-8 border-t border-slate-200 pt-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- 腳本 -->
+                        <div>
+                            <div class="flex justify-between items-end mb-3">
+                                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="video" class="w-5 h-5 text-indigo-500"></i> 畫面分鏡 (無臉拍攝)</h3>
+                                <button onclick="copyToClipboard('final-script')" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> 複製
+                                </button>
+                            </div>
+                            <textarea id="final-script" class="w-full h-64 p-4 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:bg-white resize-none" readonly></textarea>
+                        </div>
+                        <!-- 內文 -->
+                        <div>
+                            <div class="flex justify-between items-end mb-3">
+                                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="instagram" class="w-5 h-5 text-pink-500"></i> IG Caption (已包規定格式)</h3>
+                                <button onclick="copyToClipboard('final-caption')" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> 複製
+                                </button>
+                            </div>
+                            <textarea id="final-caption" class="w-full h-64 p-4 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:bg-white resize-none" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 無臉拍攝與製作教學 (Production Tutorial) -->
+        <div id="production" class="tab-content space-y-6">
+            <div class="bg-indigo-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
+                <h3 class="text-xl font-bold mb-2 relative z-10">點樣唔出樣 (Faceless) 都拍到爆款？</h3>
+                <p class="text-indigo-200 text-sm relative z-10">針對本次 Campaign 嘅兩種方向，我哋為你準備咗兩種專屬嘅高質感拍攝手法：</p>
+                <i data-lucide="camera" class="absolute right-4 bottom-4 w-24 h-24 text-white opacity-5"></i>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 手法 1 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="eye" class="text-blue-500"></i> 沉浸式 POV (第一人稱視角)</h4>
+                    <p class="text-xs text-slate-500 mb-4">最適合【方向 B：生活痛點】，令觀眾感同身受你間房有幾亂。</p>
+                    <ul class="space-y-3 text-sm text-slate-700">
+                        <li class="flex gap-2"><span>1.</span> 把手機放在胸口或下巴高度拍攝，營造「眼睛望出去」的感覺。</li>
+                        <li class="flex gap-2"><span>2.</span> 拍攝時加入手部動作，例如：嘆住氣咁執起地下嘅雜物，然後無奈放低。</li>
+                        <li class="flex gap-2"><span>3.</span> 配合 ASMR 音效：喺執嘢、撕膠紙、或者打開紙箱時，原聲收音放大，會極度治癒。</li>
                     </ul>
                 </div>
 
-                <div class="bg-rose-50 p-6 rounded-xl border border-rose-200">
-                    <h3 class="text-lg font-bold text-rose-800 mb-4 flex items-center gap-2">
-                        <i data-lucide="x-circle" class="w-5 h-5"></i> 絕對不可 (Do Not Include)
-                    </h3>
-                    <ul class="space-y-3 text-sm text-rose-700">
-                        <li>🚫 講「全港最平」、「一定最安全」等絕對聲稱</li>
-                        <li>🚫 拍攝危險行為 (阻塞通道、攀爬、玩火)</li>
-                        <li>🚫 暗示存放違禁品 (易燃物、活體、現金等)</li>
-                        <li>🚫 貶低其他迷你倉品牌</li>
-                        <li>🚫 買 Views、Likes 或落 Ads (必須 Organic)</li>
+                <!-- 手法 2 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="smartphone" class="text-emerald-500"></i> 手機螢幕錄影 (Screen Record)</h4>
+                    <p class="text-xs text-slate-500 mb-4">最適合【方向 A：集體記憶】，帶出 81777778 係條件反射。</p>
+                    <ul class="space-y-3 text-sm text-slate-700">
+                        <li class="flex gap-2"><span>1.</span> <strong>WhatsApp 法：</strong> 錄影自己同朋友對話「間房好亂」，然後打字時上面彈出「時昌」或「81777778」嘅建議字眼。</li>
+                        <li class="flex gap-2"><span>2.</span> <strong>Siri 對話：</strong> 錄影呼叫 Siri：「Siri，搵全香港人都識嘅電話」，然後彈出 81777778。</li>
+                        <li class="flex gap-2"><span>3.</span> <strong>IG 搜尋器：</strong> 錄影喺 IG 亂打數字，但最尾自動變成 81777778 嘅視覺效果。</li>
                     </ul>
                 </div>
+            </div>
+            
+            <div class="bg-slate-800 text-white p-6 rounded-xl">
+                <h4 class="font-bold text-amber-400 mb-3 flex items-center gap-2"><i data-lucide="scissors"></i> 剪接加分位：毛玻璃 (Glassmorphism) 字幕</h4>
+                <p class="text-sm text-slate-300 mb-3">如果淨係得畫面太單調，喺 CapCut 加入高質感 UI 特效顯示 <strong>81777778</strong> 同 <strong>Offer</strong>：</p>
+                <ol class="list-decimal pl-5 space-y-1 text-sm text-slate-200">
+                    <li>喺影片上方加一張「純白色正方形圖片」作為畫中畫。</li>
+                    <li>將白色圖片嘅「混合模式 (Blend)」調低不透明度至 30%。</li>
+                    <li>套用「模糊 (Blur)」影片特效落白色圖片度。</li>
+                    <li>喺模糊框上面打上「8177 7778」及優惠字眼，高級感倍增！</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 4. 發佈前 Checklist (Rules) -->
+        <div id="rules" class="tab-content">
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-6 md:p-8 mb-6">
+                <h2 class="text-xl font-bold text-rose-800 mb-2 flex items-center gap-2"><i data-lucide="alert-octagon"></i> 避免被取消資格 (Do Not Include)</h2>
+                <p class="text-sm text-rose-600 mb-4">請確保影片內容<strong>絕對沒有</strong>以下元素，否則會影響計算 Views / 報酬：</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                    <div class="flex items-start gap-2"><i data-lucide="x" class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5"></i> 冒認代表品牌官方發言</div>
+                    <div class="flex items-start gap-2"><i data-lucide="x" class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5"></i> 講「全港最平/第一/一定最安全」等聲稱</div>
+                    <div class="flex items-start gap-2"><i data-lucide="x" class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5"></i> 暗示存放違法/危險/易燃/活體/現金物品</div>
+                    <div class="flex items-start gap-2"><i data-lucide="x" class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5"></i> 拍攝危險行為 (阻塞通道/攀爬貨架/玩火)</div>
+                    <div class="flex items-start gap-2"><i data-lucide="x" class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5"></i> 貶低其他迷你倉品牌</div>
+                    <div class="flex items-start gap-2"><i data-lucide="x" class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5"></i> 買 Views/Likes 或使用任何 Paid Ads 推廣</div>
+                </div>
+            </div>
+
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 md:p-8">
+                <h2 class="text-xl font-bold text-emerald-800 mb-4 flex items-center gap-2"><i data-lucide="check-circle-2"></i> 發佈最終確認 (Must Include)</h2>
+                <ul class="space-y-4 text-sm text-slate-700">
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 清楚提及「時昌迷你倉」</li>
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 清楚展示或提及「81777778」</li>
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 包含三大指定 Offer 其中一個</li>
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 帶出至少一個使用原因 (雜物多/搬屋/網店等)</li>
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 影片已設定為公開的 Instagram Reel</li>
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 已包含所有指定的 Hashtags</li>
+                    <li class="flex items-center gap-3"><input type="checkbox" class="w-5 h-5 text-emerald-600 rounded"> 發佈後，已將 Reel 連結提交到 KoLink 平台</li>
+                </ul>
             </div>
         </div>
     </div>
 
     <script>
-        // 初始化 Lucide 圖標
         lucide.createIcons();
 
-        const hashtags = "\n\n#時昌迷你倉 #81777778 #首月租倉10蚊 #香港迷你倉 #香港集體回憶 #香港廣告 #香港生活 #收納整理 #迷你倉 #KoLink #ViewsEqualsMoney";
+        // 統一嘅 Hashtags
+        const requiredHashtags = "\n\n#時昌迷你倉 #81777778 #首月租倉10蚊 #香港迷你倉 #香港集體回憶 #香港廣告 #香港生活 #收納整理 #迷你倉 #KoLink #ViewsEqualsMoney";
 
-        // 10 個影片企劃資料
-        const ideasData = [
-            {
-                id: 1, title: "手機鍵盤的肌肉記憶", direction: "A：集體記憶",
-                visual: "螢幕錄影手機打字介面。輸入「屋企好亂」，候選字自動彈出「81777778」。",
-                scriptTemplate: "[畫面 0-3秒] 螢幕錄影：打開 WhatsApp 朋友問「屋企好多雜物點算」\n[畫面 3-6秒] 鍵盤打字，自動選字區彈出「81777778」\n[畫面 6-10秒] 彈出 Glassmorphism 特效字：「需要迷你倉？81777778」\n[結尾] 語音/字幕：而家首月租倉，只係 HK$10！",
-                captionTemplate: "香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？今次用自己方式重拍呢個經典記憶點。需要迷你倉嘅話，而家首月租倉只係 HK$10。"
-            },
-            {
-                id: 2, title: "IG 搜尋器排行榜", direction: "A：集體記憶",
-                visual: "用毛玻璃風格設計卡片，標題「香港最洗腦廣告」。翻開第一名只有一串數字：81777778。",
-                scriptTemplate: "[畫面 0-3秒] 手機全螢幕，一張靚靚 UI 卡片寫住「香港洗腦廣告排行榜」\n[畫面 3-8秒] 卡片滑開，第一名揭曉：81777778\n[畫面 8-12秒] 字幕：以前覺得洗腦，依家大個先知真係有需要\n[結尾] 經網上入倉，即享七折！",
-                captionTemplate: "香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？今次用自己方式重拍呢個經典記憶點。需要迷你倉嘅話，經網上入倉，即享七折！"
-            },
-            {
-                id: 3, title: "Siri 都有代溝？", direction: "A：集體記憶",
-                visual: "對住枱面部電話(POV)，呼叫 Siri。Siri 介面轉動並回應。",
-                scriptTemplate: "[畫面 0-4秒] POV 視角望住枱面部 iPhone，用語音問：「Siri，我想租迷你倉」\n[畫面 4-9秒] Siri 動畫轉動，彈出語音：「為你尋找 81777778」\n[畫面 9-12秒] 字幕：時昌迷你倉，香港人嘅集體記憶\n[結尾] 新入倉，送運輸！",
-                captionTemplate: "香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？連 Siri 都識答！需要迷你倉嘅話，而家新入倉，送運輸！"
-            },
-            {
-                id: 4, title: "書枱的「末日」POV", direction: "B：生活痛點",
-                visual: "第一人稱視角，望住自己張書枱堆滿書本、電腦配件，完全無位做嘢。",
-                scriptTemplate: "[畫面 0-4秒] 搖晃鏡頭拍攝張超級亂、冇位放電腦嘅書枱\n[畫面 4-8秒] 嘆氣聲，字幕：「我終於明白，點解香港人需要迷你倉」\n[畫面 8-12秒] 啪一聲手指 (Snap)，雜物消失，枱面變乾淨\n[結尾] 字幕：拯救書枱，時昌迷你倉 81777778。而家首月租倉，只係 HK$10！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。屋企唔係唔夠整理，係真係唔夠位。書枱變雜物房點算好？時昌迷你倉 81777778，而家首月租倉只係 HK$10。"
-            },
-            {
-                id: 5, title: "模型收藏家的哀歌", direction: "B：生活痛點",
-                visual: "微距拍攝精美的動漫模型或波鞋，背景是擠迫的床底或紙箱。",
-                scriptTemplate: "[畫面 0-5秒] 用電影感微距特寫靚靚 Figure / 波鞋\n[畫面 5-8秒] 鏡頭突然拉遠，原來堆喺好迫嘅床底，字幕：「收藏品冇錯，冇位放先係問題」\n[畫面 8-12秒] 畫面打出時昌 Logo 及 81777778\n[結尾] 拯救收藏品，經網上入倉，即享七折！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。買玩具/波鞋冇錯，錯在間房冇位放！時昌迷你倉 81777778，經網上入倉，即享七折！"
-            },
-            {
-                id: 6, title: "$10 的價值觀挑戰", direction: "B：生活痛點",
-                visual: "快剪 $10 買到的東西（一包紙巾、一支飲品），最後顯示迷你倉首月租金。",
-                scriptTemplate: "[畫面 0-2秒] 手持 $10 蚊銀仔\n[畫面 2-6秒] 快閃：一包紙巾、一支水... \n[畫面 6-10秒] 字幕：但原來 $10 可以拯救你間房！時昌迷你倉 81777778\n[結尾] 首月租倉，只係 HK$10！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。原來而家 $10 蚊除咗買包紙巾，仲可以租到個倉！時昌迷你倉 81777778，而家首月租倉只係 HK$10。"
-            },
-            {
-                id: 7, title: "阿媽嘅怒吼文字動畫", direction: "B：生活痛點",
-                visual: "黑畫面，不斷彈出 WhatsApp 語音訊息嘅 UI 氣泡（唔出聲，只出字幕）。",
-                scriptTemplate: "[畫面 0-4秒] 畫面彈出對話框：「你啲嘢幾時掉？」「成屋都係你啲嘢！」\n[畫面 4-8秒] 畫面狠狠打出大字：「當張櫈開始唔係用嚟坐，而係用嚟放衫…」\n[畫面 8-12秒] 字幕：免卻家庭糾紛，時昌迷你倉 81777778\n[結尾] 新入倉，送運輸！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。為咗避免每日比阿媽鬧，最直接嘅解決方法就係租倉！時昌迷你倉 81777778，新入倉，送運輸！"
-            },
-            {
-                id: 8, title: "換季 ASMR 治癒收納", direction: "B：生活痛點",
-                visual: "手部特寫，將冬裝放入真空袋，然後用吸塵機抽氣嘅畫面。強調 ASMR。",
-                scriptTemplate: "[畫面 0-6秒] 無背景音樂，只有清晰嘅執衫、拉拉鏈、抽氣 ASMR 聲音\n[畫面 6-9秒] 真空袋變扁，但打出字幕：「抽得幾薄都好，始終都係霸住間房」\n[畫面 9-12秒] 時昌迷你倉 81777778\n[結尾] 轉季必備，首月租倉，只係 HK$10！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。換季啲厚衫點抽真空都係咁阻埞。時昌迷你倉 81777778，而家首月租倉只係 HK$10。"
-            },
-            {
-                id: 9, title: "搬屋地獄縮時攝影", direction: "B：生活痛點",
-                visual: "縮時攝影 (Timelapse) 將屋企雜物入箱嘅過程，紙箱越疊越高。",
-                scriptTemplate: "[畫面 0-5秒] 快速播放 (Timelapse) 將書本雜物入紙箱嘅畫面\n[畫面 5-8秒] 紙箱堆到成座山咁高，配上嘆氣音效\n[畫面 8-12秒] 搬屋過渡期救星？時昌迷你倉 81777778\n[結尾] 新入倉，送運輸！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。搬屋最需要嘅，除咗紙箱，就係迷你倉。時昌迷你倉 81777778，新入倉，送運輸！"
-            },
-            {
-                id: 10, title: "網店老闆崩潰日常", direction: "B：生活痛點",
-                visual: "第一人稱走路視角。一開房門，成地都係順豐紙箱、存貨，行路都要避。",
-                scriptTemplate: "[畫面 0-4秒] 開房門，影住地下全部都係貨同包裝物料\n[畫面 4-8秒] 字幕：「小生意做大咗，屋企唔夠擺點算？」\n[畫面 8-12秒] 畫面打出時昌 Logo 及 81777778\n[結尾] 經網上入倉，即享七折！",
-                captionTemplate: "我終於明白點解香港人需要迷你倉。做網店賺到錢，但間房連行路嘅位都冇？時昌迷你倉 81777778，經網上入倉，即享七折！"
-            }
-        ];
-
-        // 渲染企劃卡片
-        function renderIdeas() {
-            const container = document.getElementById('ideas-container');
-            let html = '';
-            
-            ideasData.forEach(idea => {
-                html += `
-                <div onclick="selectIdea(${idea.id})" class="cursor-pointer glass-card hover:bg-white transition-all duration-300 rounded-xl p-5 shadow-sm hover:shadow-md group">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded-md">${idea.direction}</span>
-                        <span class="text-slate-400 group-hover:text-blue-500"><i data-lucide="edit-3" class="w-4 h-4"></i></span>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-800 mb-2">${idea.title}</h3>
-                    <p class="text-sm text-slate-600 line-clamp-2"><strong>畫面：</strong>${idea.visual}</p>
-                </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            lucide.createIcons(); // 重新渲染新加入的圖標
-        }
-
-        // 切換分頁
         function switchTab(tabId) {
-            // 隱藏所有內容
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            // 顯示目標內容
             document.getElementById(tabId).classList.add('active');
             
-            // 更新按鈕樣式
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 if(btn.dataset.target === tabId) {
-                    if(tabId === 'ai') {
-                        btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-indigo-500 text-white shadow-md";
-                    } else if (tabId === 'rules') {
-                        btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-rose-500 text-white shadow-md";
-                    } else {
-                        btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-blue-500 text-white shadow-md";
-                    }
+                    btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all bg-blue-600 text-white shadow-md";
                 } else {
                     if(btn.dataset.target === 'rules'){
                          btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-rose-50 hover:text-rose-600";
-                    } else if(btn.dataset.target === 'ai') {
-                         btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-indigo-50 hover:text-indigo-600";
                     } else {
                         btn.className = "tab-btn flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-bold text-sm transition-all text-slate-600 hover:bg-slate-100";
                     }
@@ -301,123 +272,76 @@
             });
         }
 
-        // 選擇企劃進入編輯器
-        function selectIdea(id) {
-            const idea = ideasData.find(i => i.id === id);
+        // 腳本生成邏輯核心
+        function generateScript() {
+            const direction = document.getElementById('select-direction').value;
+            const reason = document.getElementById('select-reason').value;
+            const offer = document.getElementById('select-offer').value;
+
+            let generatedScript = "";
+            let generatedCaption = "";
+
+            // 根據不同方向生成分鏡
+            if (direction === "A") {
+                generatedScript = 
+`[0-3秒 - 視覺 Hook] 
+螢幕錄影：打開 WhatsApp，朋友發送訊息：「喂，${reason}點算好呀？有冇計？」
+
+[3-7秒 - 洗腦植入] 
+你在鍵盤準備輸入「搵倉」，但鍵盤上方的『自動建議選字』，竟然自己彈出「81777778」這串數字。
+配音/字幕：「香港人嘅手機都有肌肉記憶？一講迷你倉，自動彈出 81777778！」
+
+[7-12秒 - 帶出 Offer] 
+畫面轉向一個充滿質感的毛玻璃 (Glassmorphism) 字卡。
+字幕顯示：【時昌迷你倉：${offer}】
+結尾語音呼籲：「有啲廣告真係住咗喺你腦入面。㩒入 Link 了解詳情啦！」`;
+
+                // 方向 A 官方 Caption 模板
+                generatedCaption = `香港人一聽到迷你倉，腦入面係咪都會自動彈出 81777778？\n今次用自己方式重拍呢個經典記憶點。\n\n其實遇到「${reason}」嘅時候，真係好需要一個倉。\n如果需要迷你倉，我哋為你準備咗優惠：${offer}！\n入去官網睇下啦！${requiredHashtags}`;
+
+            } else {
+                generatedScript = 
+`[0-4秒 - 痛點 Hook] 
+第一人稱視角 (POV) 拍攝，搖晃鏡頭影住極度混亂嘅環境（配合「${reason}」嘅場景，例如滿地紙箱 / 成床都係衫）。
+配上一聲好無奈嘅長嘆氣。字幕：「我終於明白，點解香港人需要迷你倉。」
+
+[4-8秒 - 轉折解決] 
+鏡頭前面啪一聲手指 (Snap)，或者用手遮一遮鏡頭做轉場。
+畫面瞬間切換到乾淨整齊嘅狀態（或者時昌迷你倉嘅靚靚官圖）。
+字幕：「屋企唔係唔夠整理，係真係唔夠位！」
+
+[8-12秒 - 帶出品牌與 Offer] 
+畫面正中間大字彈出時昌 Logo 及「8177 7778」。
+配音/字幕：「拯救空間，搵時昌！${offer}」
+結尾呼籲：「即刻留言 / 去 Profile 條 Link 拯救你間房！」`;
+
+                // 方向 B 官方 Caption 模板
+                generatedCaption = `我終於明白點解香港人需要迷你倉。\n\n最近因為「${reason}」，真係搞到好頭痛，屋企唔係唔夠整理，係真係唔夠位。當你連行路嘅位都冇嘅時候，就會諗起 81777778。\n\n好彩有時昌迷你倉！而家仲有優惠：${offer}。\n一齊解放屋企空間啦！${requiredHashtags}`;
+            }
+
+            // 顯示結果
+            document.getElementById('final-script').value = generatedScript;
+            document.getElementById('final-caption').value = generatedCaption;
+            document.getElementById('script-result').classList.remove('hidden');
             
-            // 隱藏空狀態，顯示編輯器
-            document.getElementById('editor-empty').classList.add('hidden');
-            document.getElementById('editor-active').classList.remove('hidden');
-            
-            // 填入資料
-            document.getElementById('editing-title').innerText = idea.title;
-            document.getElementById('editing-direction').innerText = idea.direction;
-            document.getElementById('script-textarea').value = idea.scriptTemplate;
-            document.getElementById('caption-textarea').value = idea.captionTemplate + hashtags;
-            
-            // 切換到編輯器分頁
-            switchTab('editor');
+            // 平滑滾動到結果區
+            document.getElementById('script-result').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 複製文字功能
-        function copyText(textareaId, btnId) {
-            const text = document.getElementById(textareaId).value;
-            const btn = document.getElementById(btnId);
-            const originalHTML = btn.innerHTML;
-            
-            // 使用較兼容的方法複製
-            const textAreaElement = document.createElement("textarea");
-            textAreaElement.value = text;
-            document.body.appendChild(textAreaElement);
-            textAreaElement.select();
+        // 複製功能
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).value;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
             try {
                 document.execCommand('copy');
-                // 成功提示
-                btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> <span>已複製!</span>`;
-                lucide.createIcons();
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    lucide.createIcons();
-                }, 2000);
+                alert('✅ 已成功複製！可以貼上 IG 啦！');
             } catch (err) {
-                console.error('複製失敗', err);
-                alert("複製失敗，請手動全選複製。");
+                alert("複製失敗，請手動複製。");
             }
-            document.body.removeChild(textAreaElement);
-        }
-
-        // 頁面載入時初始化
-        window.onload = () => {
-            renderIdeas();
-        };
-
-        // --- 新增: AI 生成器邏輯 ---
-        function fillAiInput(text) {
-            document.getElementById('ai-input').value = text;
-        }
-
-        function generateAI() {
-            const input = document.getElementById('ai-input').value.trim();
-            if(!input) {
-                alert('請先輸入你想拍嘅主題，或者點擊上方嘅預設標籤！');
-                return;
-            }
-
-            // 顯示 Loading
-            document.getElementById('ai-result').classList.add('hidden');
-            document.getElementById('ai-result').classList.remove('flex');
-            document.getElementById('ai-loading').classList.remove('hidden');
-
-            // 模擬 AI 生成延遲 (1.5秒)
-            setTimeout(() => {
-                document.getElementById('ai-loading').classList.add('hidden');
-                document.getElementById('ai-result').classList.remove('hidden');
-                document.getElementById('ai-result').classList.add('flex');
-
-                const container = document.querySelector('#ai-result > div');
-                
-                // 動態生成內容，嚴格按照左側教學嘅結構
-                container.innerHTML = `
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-500 mb-1">🔥 1. 影片標題 (Hook)</h4>
-                        <p class="text-sm font-bold text-indigo-700 bg-indigo-50 p-2 rounded border border-indigo-100">「${input}點算好？原來 $10 可以解決！」</p>
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-500 mb-1">🎬 2. 影片內容分鏡 (Body)</h4>
-                        <div class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200 space-y-2">
-                            <p><strong>0-3秒：</strong> 第一人稱視角 (POV)，影住極度混亂嘅環境 (${input})，配合一聲長嘆氣。</p>
-                            <p><strong>3-7秒：</strong> 畫面彈出手機搜尋介面，自動輸入「81777778」，彈出時昌迷你倉 Logo。</p>
-                            <p><strong>7-12秒：</strong> 啪一聲手指 (Snap)，畫面轉場變到超級乾淨。大字彈出：「首月租倉 HK$10！」</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-500 mb-1">📝 3. 發佈內文 (Caption)</h4>
-                        <div class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200">
-                            我終於明白點解香港人需要迷你倉。${input}真係好崩潰！好彩有時昌迷你倉 81777778，而家首月租倉只係 HK$10。即刻執返靚個位啦！
-                        </div>
-                    </div>
-                `;
-                lucide.createIcons();
-
-                // 儲存至全域變數，供複製使用
-                window.currentAiScript = `[畫面 0-3秒] 第一人稱視角 (POV)，影住極度混亂嘅環境 (${input})，配合一聲長嘆氣。\n[畫面 3-7秒] 畫面彈出手機搜尋介面，自動輸入「81777778」，彈出時昌迷你倉 Logo。\n[畫面 7-12秒] 啪一聲手指 (Snap)，畫面轉場變到超級乾淨。大字彈出：「首月租倉 HK$10！」`;
-                window.currentAiCaption = `我終於明白點解香港人需要迷你倉。${input}真係好崩潰！好彩有時昌迷你倉 81777778，而家首月租倉只係 HK$10。即刻執返靚個位啦！\n\n#時昌迷你倉 #81777778 #首月租倉10蚊 #香港迷你倉 #香港集體回憶 #香港廣告 #香港生活 #收納整理 #迷你倉 #KoLink #ViewsEqualsMoney`;
-                window.currentAiTitle = `${input} 腳本`;
-
-            }, 1500);
-        }
-
-        function copyAiResult() {
-            // 切換到編輯器並填入 AI 生成內容
-            document.getElementById('editor-empty').classList.add('hidden');
-            document.getElementById('editor-active').classList.remove('hidden');
-
-            document.getElementById('editing-title').innerText = window.currentAiTitle || 'AI 生成腳本';
-            document.getElementById('editing-direction').innerText = '✨ AI 生成';
-            document.getElementById('script-textarea').value = window.currentAiScript || '';
-            document.getElementById('caption-textarea').value = window.currentAiCaption || '';
-
-            switchTab('editor');
+            document.body.removeChild(textArea);
         }
     </script>
 </body>
